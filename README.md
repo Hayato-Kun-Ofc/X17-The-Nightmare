@@ -14,7 +14,7 @@ Written entirely in Java within the Hytale modding API, this mod extends the bas
 
 ## Important Note
 
-This mod was created with much work, including most of the assets. Assets not available here like music and 
+This mod was created with much work, including most of the assets. Assets available here like music and 
 sounds are original compositions and recordings made exclusively for this mod and are 
 All Rights Reserved. Extracting and using them from releases without permission is prohibited.
 The character model is made by me, and it's inspired on FNAF universe, not affiliated with or endorsed by 
