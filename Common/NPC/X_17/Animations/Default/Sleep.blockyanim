@@ -1,0 +1,469 @@
+{
+  "duration": 10,
+  "holdLastKeyframe": false,
+  "nodeAnimations": {
+    "L-Arm": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 3.324597,
+            "y": -12.28886,
+            "z": -4.947234
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.041068,
+            "y": -0.740215,
+            "z": 0.116641,
+            "w": 0.660901
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Arm": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -7.599807,
+            "y": -11.514631,
+            "z": -4.96011
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.353918,
+            "y": 0.591488,
+            "z": -0.455074,
+            "w": 0.56373
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Forearm": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -9.680332,
+            "y": 7.971417,
+            "z": 15.305213
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.100175,
+            "y": -0.06871,
+            "z": 0.274476,
+            "w": 0.95389
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "Chest": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -10.750757,
+            "y": 0.990197,
+            "z": 2.034669
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.051727,
+            "y": 0.070846,
+            "z": 0.511366,
+            "w": 0.854874
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "Belly": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 4.047671,
+            "y": -5.824964,
+            "z": -17.483505
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.679258,
+            "y": 0.11279,
+            "z": 0.16716,
+            "w": 0.705651
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "Head": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -3.611938,
+            "y": -20.7825,
+            "z": 5.977284
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.711611,
+            "y": -0.388594,
+            "z": -0.060575,
+            "w": 0.582182
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Thigh": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 14.956494,
+            "y": 0,
+            "z": 9.648977
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.685336,
+            "y": 0.126131,
+            "z": 0.141276,
+            "w": 0.703169
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "L-Thigh": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 11.670198,
+            "y": 0,
+            "z": 0.226178
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.688122,
+            "y": 0.081963,
+            "z": 0.145935,
+            "w": 0.706026
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "L-Foot": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 7.391077,
+            "y": 31.827787,
+            "z": 4.940211
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.099664,
+            "y": -0.273947,
+            "z": -0.561365,
+            "w": 0.774525
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Foot": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -6.062983,
+            "y": 3.887382,
+            "z": 12.157896
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.51685,
+            "y": -0.454024,
+            "z": 0.476089,
+            "w": -0.547784
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "Jaw": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 1.763359,
+            "y": -1.45114,
+            "z": 2.444384
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.049829,
+            "y": 0.166394,
+            "z": -0.294983,
+            "w": 0.939582
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Calf": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -4.41745,
+            "y": 7.084723,
+            "z": 6.406759
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.219231,
+            "y": 0.627471,
+            "z": 0.209227,
+            "w": -0.717246
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "L-Calf": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 8.0465,
+            "y": 2.04605,
+            "z": -0.77514
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.592526,
+            "y": -0.387234,
+            "z": 0.559755,
+            "w": 0.430857
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "Pelvis": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 5,
+            "y": -47,
+            "z": -1
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0,
+            "y": -0.300706,
+            "z": 0,
+            "w": 0.953717
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "L-Forearm": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.098995,
+            "y": -3.843837,
+            "z": 9.471089
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.461702,
+            "y": -0.005607,
+            "z": 0.000625,
+            "w": 0.887017
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "L-Hand": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.146334,
+            "y": -9.074503,
+            "z": 10.18288
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.341974,
+            "y": 0.005641,
+            "z": 0.000113,
+            "w": 0.939693
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Hand": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -4.005291,
+            "y": -3.011672,
+            "z": -14.08415
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": 0.09744,
+            "y": 0.003962,
+            "z": -0.26697,
+            "w": 0.958758
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "Neck": {
+      "position": [ {
+          "time": 0,
+          "delta": {
+            "x": -14.082907,
+            "y": 5.917821,
+            "z": -8.399482
+          },
+          "interpolationType": "smooth"
+        } ],
+      "orientation": [ {
+          "time": 0,
+          "delta": {
+            "x": -0.224144,
+            "y": -0.12941,
+            "z": -0.482963,
+            "w": 0.836516
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeStretch": [],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "R-Eye": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [ {
+          "time": 0,
+          "delta": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    },
+    "L-Eye": {
+      "position": [],
+      "orientation": [],
+      "shapeStretch": [ {
+          "time": 0,
+          "delta": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "interpolationType": "smooth"
+        } ],
+      "shapeVisible": [],
+      "shapeUvOffset": []
+    }
+  },
+  "formatVersion": 1
+}

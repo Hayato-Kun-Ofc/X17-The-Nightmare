@@ -1,0 +1,11 @@
+{
+  "Groups": {
+    "Hostile": [
+      "Player"
+    ],
+    "Friendly": [
+      "X_17",
+      "Undead"
+    ]
+  }
+}

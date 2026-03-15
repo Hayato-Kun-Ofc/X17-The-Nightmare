@@ -1,0 +1,27 @@
+{
+    "Layers": [
+        {
+            "Files": [
+                "Sounds/NPC/X_17/Creepy.ogg",
+                "Sounds/NPC/X_17/riser.ogg",
+                "Sounds/NPC/X_17/Long_Sigh.ogg",
+                "Sounds/NPC/X_17/wind.ogg",
+                "Sounds/NPC/X_17/whisper-trail-2.ogg",
+                "Sounds/NPC/X_17/ambience_x1.ogg"
+            ],
+            "RandomSettings": {
+                "MinVolume": 0,
+                "MaxVolume": 1,
+                "MinPitch": -1.0,
+                "MaxPitch": 0.5
+            },
+            "Probability": 50
+        }
+    ],
+    "Volume": 5.0,
+    "PreventSoundInterruption": true,
+    "AudioCategory": "AudioCat_NPC_X_17",
+    "Parent": "SFX_Attn_Loud",
+    "MaxDistance": 100,
+    "StartAttenuationDistance": 10
+}

@@ -1,0 +1,35 @@
+{
+    "Container": {
+        "Type": "Multiple",
+        "Containers": [
+            {
+                "Type": "Choice",
+                "Weight": 100,
+                "Containers": [
+                    {
+                        "Type": "Single",
+                        "Item": {
+                            "ItemId": "Ingredient_Void_Essence",
+                            "QuantityMin": 100,
+                            "QuantityMax": 100
+                        }
+                    },
+                    {
+                        "Type": "Choice",
+                        "Weight": 10,
+                        "Containers": [
+                            {
+                                "Type": "Single",
+                                "Item": {
+                                    "ItemId": "Deco_X_17_Trophy",
+                                    "QuantityMin": 1,
+                                    "QuantityMax": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
