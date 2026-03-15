@@ -1,0 +1,18 @@
+npcRoles.X_17.name=X-17
+npcRoles.X_17.description=X-17 O Pesadelo
+npcRoles.X_17.lore=Uma entidade misteriosa que assombra a noite
+
+items.X_17.name=X-17 O Pesadelo
+items.X_17.description=Uma entidade misteriosa e etérea que emerge apenas durante as horas mais sombrias
+items.X_17.lore=X-17 é uma criatura de mistério, nascida das fronteiras entre os mundos. Nem totalmente presente nem inteiramente ausente, manifesta-se apenas nas horas mais profundas da noite. Observa à distância, atraída pela presença de viajantes.
+
+items.Deco_X_17_Trophy.name=Cabeça do X-17
+items.Deco_X_17_Trophy.description=Um troféu macabro da entidade de pesadelo que espreita no nevoeiro, sua energia ainda é sentida.
+
+customUI.Pages.X17WelcomePage.title=Bem-vindo ao Pesadelo
+customUI.Pages.X17WelcomePage.subtitle=X-17 O Pesadelo — v0.2.4
+customUI.Pages.X17WelcomePage.body=Sobrevive a este mundo como sempre fizeste.\nConstrói o teu abrigo. Reúne os teus recursos. Acende as tuas fogueiras.\n \nMas fica avisado — as noites e as cavernas nunca mais serão as mesmas.\nAlgo espreita na névoa. Algo que observa.\n \nEstás a ser observado.
+customUI.Pages.X17WelcomePage.tipTitle=Dicas de Sobrevivência
+customUI.Pages.X17WelcomePage.tip1= > Constrói paredes e tecto, portas e janelas podem ser o teu único aviso.
+customUI.Pages.X17WelcomePage.tip2= > O silêncio não significa nada. O barulho não significa nada. Não confies em nada.
+customUI.Pages.X17WelcomePage.button=Entendo. Começar.

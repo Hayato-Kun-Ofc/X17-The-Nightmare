@@ -1,0 +1,400 @@
+{
+  "Type": "Abstract",
+  "StartState": "Stalk",
+  "Parameters": {
+    "Appearance": {
+      "Value": "X_17",
+      "Description": "Model to be used"
+    },
+    "ViewRange": {
+      "Value": 60,
+      "Description": "View range"
+    },
+    "ViewSector": {
+      "Value": 360,
+      "Description": "Field of view"
+    },
+    "HearingRange": {
+      "Value": 40,
+      "Description": "Hearing range"
+    },
+    "AlertedRange": {
+      "Value": 80,
+      "Description": "Alert range"
+    },
+    "MaxSpeed": {
+      "Value": 9.0,
+      "Description": "Maximum walking speed"
+    },
+    "MaxHealth": {
+      "Value": 1000,
+      "Description": "Max health for the NPC"
+    },
+    "DropList": {
+      "Value": "Drop_X_17",
+      "Description": "Drop Items"
+    },
+    "AttitudeGroup": {
+      "Value": "X_17",
+      "Description": "This NPCs attitude group"
+    },
+    "AttackSequence": {
+      "Value": "Component_Instruction_Attack_Sequence_Zombie",
+      "Description": "The attack sequence to use in combat"
+    },
+    "AttackDistance": {
+      "Value": 1.0,
+      "Description": "The distance at which an NPC will execute attacks"
+    },
+    "CombatRelativeTurnSpeed": {
+      "Value": 2.0,
+      "Description": "Modifier that decides turn speed difference in combat"
+    },
+    "ProximityAggroRange": {
+      "Value": 3.5,
+      "Description": "Distance at which player gets too close and triggers aggression"
+    },
+    "StalkDuration": {
+      "Value": [
+        30,
+        50
+      ],
+      "Description": "How long to stalk before becoming aggressive (seconds)"
+    },
+    "IsMemory": {
+      "Value": false,
+      "Description": "Defines if the NPC is a memory"
+    },
+    "MemoriesCategory": {
+      "Value": "Other",
+      "Description": "Defines the category of the memory"
+    },
+    "MemoriesNameOverride": {
+      "Value": "",
+      "Description": "Overrides the memory name if set"
+    },
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Template.name",
+      "Description": "Translation key for NPC name display"
+    }
+  },
+  "IsMemory": {
+    "Compute": "IsMemory"
+  },
+  "MemoriesCategory": {
+    "Compute": "MemoriesCategory"
+  },
+  "MemoriesNameOverride": {
+    "Compute": "MemoriesNameOverride"
+  },
+  "Appearance": {
+    "Compute": "Appearance"
+  },
+  "DropList": {
+    "Compute": "DropList"
+  },
+  "DefaultNPCAttitude": "Ignore",
+  "DefaultPlayerAttitude": "Neutral",
+  "AttitudeGroup": {
+    "Compute": "AttitudeGroup"
+  },
+  "BusyStates": [
+    "Rage"
+  ],
+  "MotionControllerList": [
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": {
+        "Compute": "MaxSpeed"
+      },
+      "Gravity": 10,
+      "RunThreshold": 0.2,
+      "MaxFallSpeed": 25,
+      "MaxRotationSpeed": 540,
+      "Acceleration": 15,
+      "MinJumpHeight": 1.5
+    }
+  ],
+  "MaxHealth": {
+    "Compute": "MaxHealth"
+  },
+  "Instructions": [
+    {
+      "Instructions": [
+        {
+          "$Comment": "=== STALK STATE (Creeping deep in the fog) ===",
+          "Sensor": {
+            "Type": "State",
+            "State": "Stalk"
+          },
+          "Instructions": [
+            {
+              "$Comment": "Creepy stalk sound on entry",
+              "Continue": true,
+              "Sensor": {
+                "Once": true,
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "PlaySound",
+                  "SoundEventId": "SFX_X_17_Stalk"
+                }
+              ]
+            },
+            {
+              "$Comment": "Occasional creepy stalk sounds while stalking",
+              "Continue": true,
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    20,
+                    60
+                  ],
+                  "Action": {
+                    "Type": "PlaySound",
+                    "SoundEventId": "SFX_X_17_Stalk"
+                  }
+                }
+              ]
+            },
+            {
+              "$Comment": "Maintain 70 block distance creeping slowly",
+              "Continue": true,
+              "Sensor": {
+                "Type": "Player",
+                "Range": {
+                  "Compute": "ViewRange"
+                },
+                "LockOnTarget": true
+              },
+              "HeadMotion": {
+                "Type": "Watch"
+              },
+              "BodyMotion": {
+                "Type": "Seek",
+                "RelativeSpeed": 0.15,
+                "SlowDownDistance": 75,
+                "StopDistance": 70
+              }
+            },
+            {
+              "$Comment": "If Player gets too close (25 blocks) -> 90% Vanish / 10% Rage",
+              "Type": "Random",
+              "Sensor": {
+                "Type": "Player",
+                "Range": 25
+              },
+              "Instructions": [
+                {
+                  "Weight": 90,
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": "Vanish"
+                    }
+                  ]
+                },
+                {
+                  "Weight": 10,
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": "Rage"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "$Comment": "Alternatively, if he stalks for too long without being noticed -> Rage",
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    45,
+                    90
+                  ],
+                  "Action": {
+                    "Type": "State",
+                    "State": "Rage"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "$Comment": "=== VANISH STATE (Terrifying Disappearance) ===",
+          "Sensor": {
+            "Type": "State",
+            "State": "Vanish"
+          },
+          "Instructions": [
+            {
+              "Continue": true,
+              "Sensor": {
+                "Once": true,
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "PlaySound",
+                  "SoundEventId": "SFX_X_17_Alerted"
+                },
+                {
+                  "Type": "PlayAnimation",
+                  "Slot": "Status",
+                  "Animation": "Alerted"
+                }
+              ]
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    1.5,
+                    1.5
+                  ],
+                  "Action": {
+                    "Type": "Despawn"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "$Comment": "=== RAGE STATE (High-Speed Chase Phase) ===",
+          "Sensor": {
+            "Type": "State",
+            "State": "Rage"
+          },
+          "Instructions": [
+            {
+              "$Comment": "Jumpscare Sound on entry",
+              "Continue": true,
+              "Sensor": {
+                "Once": true,
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "PlayAnimation",
+                  "Slot": "Status",
+                  "Animation": "Alerted"
+                },
+                {
+                  "Type": "PlaySound",
+                  "SoundEventId": "SFX_X_17_Jumpscare"
+                }
+              ]
+            },
+            {
+              "$Comment": "Aggressive roaring loop while chasing",
+              "Continue": true,
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    2,
+                    4
+                  ],
+                  "Action": {
+                    "Type": "PlaySound",
+                    "SoundEventId": "SFX_X_17_Rage"
+                  }
+                }
+              ]
+            },
+            {
+              "$Comment": "Direct brutal melee attack - NO dodging, NO strafing",
+              "Reference": "Component_Instruction_Target_Adjusted_Attack_Melee",
+              "Modify": {
+                "AttackSequence": {
+                  "Compute": "AttackSequence"
+                },
+                "AttackDistance": {
+                  "Compute": "AttackDistance"
+                },
+                "CombatRelativeTurnSpeed": {
+                  "Compute": "CombatRelativeTurnSpeed"
+                },
+                "MaintainDistance": false,
+                "StrafingDurationRange": [
+                  0,
+                  0
+                ],
+                "StrafingFrequencyRange": [
+                  999,
+                  999
+                ]
+              }
+            },
+            {
+              "Continue": true,
+              "Sensor": {
+                "Type": "Player",
+                "Range": {
+                  "Compute": "AlertedRange"
+                },
+                "LockOnTarget": true
+              },
+              "HeadMotion": {
+                "Type": "Watch"
+              },
+              "BodyMotion": {
+                "Type": "Seek",
+                "RelativeSpeed": 1.0,
+                "SlowDownDistance": 1.5,
+                "StopDistance": 0.5
+              }
+            },
+            {
+              "$Comment": "SURVIVAL: If player kites him for 45s, he vanishes",
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    45,
+                    45
+                  ],
+                  "Action": {
+                    "Type": "State",
+                    "State": "Vanish"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "NameTranslationKey": {
+    "Compute": "NameTranslationKey"
+  }
+}

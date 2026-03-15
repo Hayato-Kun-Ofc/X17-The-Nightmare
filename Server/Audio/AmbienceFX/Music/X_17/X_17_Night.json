@@ -1,0 +1,36 @@
+{
+    "Conditions": {
+        "DayTime": {
+            "Min": 19,
+            "Max": 5
+        },
+        "EnvironmentTagPattern": {
+            "Op": "Or",
+            "Patterns": [
+                {
+                    "Op": "Equals",
+                    "Tag": "Zone1"
+                },
+                {
+                    "Op": "Equals",
+                    "Tag": "Zone2"
+                },
+                {
+                    "Op": "Equals",
+                    "Tag": "Zone3"
+                },
+                {
+                    "Op": "Equals",
+                    "Tag": "Zone4"
+                }
+            ]
+        }
+    },
+    "Music": {
+        "Tracks": [
+            "Music/X_17/Timehascome.ogg"
+        ]
+    },
+    "AudioCategory": "AudioCat_Music",
+    "Priority": 100
+}

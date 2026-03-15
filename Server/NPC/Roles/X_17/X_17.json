@@ -1,0 +1,40 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_X_17",
+  "Modify": {
+    "Appearance": "X_17",
+    "DropList": "Drop_X_17",
+    "MaxHealth": 1000,
+    "IsMemory": true,
+    "MemoriesCategory": "Unique",
+    "MemoriesNameOverride": "X_17",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [
+          {
+            "Parent": "NPC_Attack_Melee_Damage",
+            "DamageCalculator": {
+              "Type": "Absolute",
+              "BaseDamage": {
+                "Physical": 65
+              },
+              "RandomPercentageModifier": 0.2
+            }
+          }
+        ]
+      },
+      "SFX_Zombie_Attack_Swing": "SFX_X_17_Attack_Swing",
+      "SFX_Zombie_Bite": "SFX_X_17_Attack_Swing",
+      "SFX_Zombie_Hurt": "SFX_X_17_Hurt"
+    },
+    "NameTranslationKey": {
+      "Compute": "NameTranslationKey"
+    }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "hk.npcRoles.X_17.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

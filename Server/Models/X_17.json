@@ -1,0 +1,142 @@
+{
+  "Model": "NPC/X_17/Models/Model.blockymodel",
+  "Texture": "NPC/X_17/Models/Texture.png",
+  "AnimationSets": {
+    "Idle": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Idle.blockyanim",
+          "Speed": 0.8
+        }
+      ]
+    },
+    "Walk": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Walk.blockyanim",
+          "Speed": 1.0
+        }
+      ]
+    },
+    "WalkBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Walk_Backward.blockyanim",
+          "Speed": 1.0
+        }
+      ]
+    },
+    "Run": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Run.blockyanim",
+          "Speed": 1.0
+        }
+      ]
+    },
+    "RunBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Run_Backward.blockyanim",
+          "Speed": 1.0
+        }
+      ]
+    },
+    "Sprint": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Sprint.blockyanim",
+          "Speed": 1.0
+        }
+      ]
+    },
+    "Jump": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Jump.blockyanim",
+          "Looping": false,
+          "BlendingDuration": 0.1
+        }
+      ]
+    },
+    "Fall": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Fall.blockyanim",
+          "BlendingDuration": 0.4
+        }
+      ]
+    },
+    "Hurt": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Damage/Hurt.blockyanim",
+          "Looping": false,
+          "BlendingDuration": 0.1
+        }
+      ]
+    },
+    "Death": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Damage/Death.blockyanim",
+          "Looping": false
+        }
+      ]
+    },
+    "Spawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Spawn.blockyanim",
+          "Looping": false,
+          "BlendingDuration": 0
+        }
+      ]
+    },
+    "Despawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Despawn2.blockyanim",
+          "Looping": false
+        }
+      ]
+    },
+    "Alerted": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Alerted.blockyanim",
+          "Looping": false
+        }
+      ]
+    }
+  },
+  "Parent": "Player",
+  "DefaultAttachments": [],
+  "RandomAttachmentSets": {},
+  "HitBox": {
+    "Max": {
+      "X": 0.35,
+      "Y": 2.2,
+      "Z": 0.35
+    },
+    "Min": {
+      "X": -0.35,
+      "Y": 0,
+      "Z": -0.35
+    }
+  },
+  "Icon": "Icons/ModelsGenerated/X_17.png",
+  "IconProperties": {
+    "Scale": 0.2,
+    "Rotation": [
+      0,
+      -45,
+      0
+    ],
+    "Translation": [
+      0,
+      -75
+    ]
+  },
+  "Particles": []
+}

@@ -1,0 +1,140 @@
+$C = "../Common.ui";
+
+// --- Horror Design Tokens ---
+@ColorHorrorCrimson = #CC0000;
+@ColorHorrorObsidian = #0D0808;
+@ColorHorrorBone = #BBAAAA;
+@ColorHorrorDarkBlood = #1A0505;
+
+// --- Horror Styles ---
+@HorrorTitleStyle = LabelStyle(
+  FontSize: 24,
+  TextColor: #FFFFFF,
+  RenderBold: true,
+  FontName: "Secondary",
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@SubtitleStyle = LabelStyle(
+  FontSize: 11,
+  TextColor: #CC0000,
+  HorizontalAlignment: Center,
+  LetterSpacing: 2,
+  RenderBold: true
+);
+
+@TipTextStyle = LabelStyle(
+  FontSize: 13, 
+  TextColor: #998888, 
+  Wrap: true
+);
+
+// --- Horror Button Style ---
+@HorrorTextButtonStyle = TextButtonStyle(
+  Default: (Background: PatchStyle(TexturePath: "../Horror/New3InputBox.png", Border: 12), LabelStyle: $C.@DefaultButtonLabelStyle),
+  Hovered: (Background: PatchStyle(TexturePath: "../Horror/New3InputBoxHovered.png", Border: 12), LabelStyle: $C.@DefaultButtonLabelStyle),
+  Pressed: (Background: PatchStyle(TexturePath: "../Horror/New3InputBoxPressed.png", Border: 12), LabelStyle: $C.@DefaultButtonLabelStyle),
+  Sounds: $C.@ButtonSounds
+);
+
+// --- Main UI Assembly ---
+$C.@PageOverlay {
+  LayoutMode: Middle;
+  Background: #000000(0.6); // Slightly darker overlay
+
+  Group #MainPanel {
+    Background: (TexturePath: "../Horror/New3ContainerFullPatch.png", Border: 20);
+    Anchor: (Width: 620);
+
+    // Ornament Top
+    Group #TopDecor { 
+      Anchor: (Top: -12, Horizontal: 0, Height: 24);
+      Background: (TexturePath: "../Horror/New3ContainerDecorationTop.png");
+    }
+
+    Group #Title {
+      Background: (TexturePath: "../Horror/New3ContainerHeader.png", Border: 20);
+      Anchor: (Height: 48, Horizontal: 2, Top: 0);
+      
+      Label #TitleLabel {
+        Style: @HorrorTitleStyle;
+        Text: %hk.customUI.Pages.X17WelcomePage.title;
+      }
+    }
+
+    Group #Content {
+      LayoutMode: Top;
+      Padding: (Full: 30);
+
+      Label {
+        Text: %hk.customUI.Pages.X17WelcomePage.subtitle;
+        Anchor: (Horizontal: 0, Bottom: 24);
+        Style: (
+          ...@SubtitleStyle,
+          HorizontalAlignment: Center
+        );
+      }
+
+      Group {
+        Anchor: (Height: 1, Bottom: 24);
+        Background: #CC0000(0.5);
+      }
+
+      Label {
+        Text: %hk.customUI.Pages.X17WelcomePage.body;
+        Anchor: (Bottom: 24);
+        Style: (
+          FontSize: 15,
+          TextColor: #BBAAAA,
+          Wrap: true
+        );
+      }
+
+      // Tips Container
+      Group {
+        Background: (TexturePath: "../Horror/New3ContainerBackgroundSecondary.png", Border: 16);
+        Padding: (Full: 20);
+        Anchor: (Bottom: 30);
+        LayoutMode: Top;
+        
+        Label {
+          Text: %hk.customUI.Pages.X17WelcomePage.tipTitle;
+          Anchor: (Bottom: 12);
+          Style: (
+            FontSize: 12,
+            TextColor: #CC0000,
+            RenderBold: true,
+            LetterSpacing: 1.5
+          );
+        }
+
+        Label {
+          Text: %hk.customUI.Pages.X17WelcomePage.tip1;
+          Anchor: (Bottom: 8);
+          Style: @TipTextStyle;
+        }
+
+        Label {
+          Text: %hk.customUI.Pages.X17WelcomePage.tip2;
+          Style: @TipTextStyle;
+        }
+      }
+
+      Group {
+        LayoutMode: Center;
+        $C.@TextButton #CloseButton {
+          @Text = %hk.customUI.Pages.X17WelcomePage.button;
+          Anchor: (Width: 500, Height: 48);
+          Style: @HorrorTextButtonStyle;
+        }
+      }
+    }
+
+    // Ornament Bottom
+    Group #BottomDecor { 
+      Anchor: (Bottom: -12, Horizontal: 0, Height: 24);
+      Background: (TexturePath: "../Horror/New3ContainerDecorationBottom.png");
+    }
+  }
+}

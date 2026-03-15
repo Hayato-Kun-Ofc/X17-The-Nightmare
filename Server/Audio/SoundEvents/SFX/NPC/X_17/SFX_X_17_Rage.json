@@ -1,0 +1,23 @@
+{
+    "Layers": [
+        {
+            "Files": [
+                "Sounds/NPC/X_17/whispers.ogg",
+                "Sounds/NPC/X_17/Long_Breath.ogg"
+            ],
+            "RandomSettings": {
+                "MinVolume": 0,
+                "MaxVolume": 1,
+                "MinPitch": -1.0,
+                "MaxPitch": 0.5
+            },
+            "Probability": 10
+        }
+    ],
+    "Volume": 5.0,
+    "PreventSoundInterruption": true,
+    "AudioCategory": "AudioCat_NPC_X_17",
+    "Parent": "SFX_Attn_Moderate",
+    "MaxDistance": 100,
+    "StartAttenuationDistance": 10
+}

@@ -1,0 +1,19 @@
+{
+    "Conditions": {
+        "DayTime": {
+            "Min": 13,
+            "Max": 18
+        },
+        "EnvironmentTagPattern": {
+            "Op": "Equals",
+            "Tag": "Caves"
+        }
+    },
+    "Music": {
+        "Tracks": [
+            "Music/X_17/Ambience_HK.ogg"
+        ]
+    },
+    "AudioCategory": "AudioCat_Music",
+    "Priority": 100
+}
