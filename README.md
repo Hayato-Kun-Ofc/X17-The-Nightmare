@@ -11,5 +11,3 @@ Written entirely in Java within the Hytale modding API, this mod extends the bas
 - **Tension System**: If X-17 hasn't spawned for several nights, the mod builds "Tension", guaranteeing an event or increasing ghost sound intensity.
 - **Atomic State Saving**: Night cycles and decisions are safely persisted to the server's disk, ensuring that a server crash mid-night doesn't reset the nightmare.
 - **Rage & Retreat Mechanics**: Attacking X-17 can trigger a high-speed Rage chase. Evading or landing enough hits causes the entity to strategically Retreat with a multi-night cooldown.
-
-Welcome to the true nightmare experience. Proceed to the subsequent pages to learn about installation, technical mechanics, and testing.
