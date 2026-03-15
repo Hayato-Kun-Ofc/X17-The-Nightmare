@@ -1,0 +1,158 @@
+{
+  "States": {
+    "Idle": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Idle.blockyanim"
+        }
+      ]
+    },
+    "Walk": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Walk.blockyanim"
+        }
+      ]
+    },
+    "WalkBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Walk_Backward.blockyanim"
+        }
+      ]
+    },
+    "Run": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Run.blockyanim"
+        }
+      ]
+    },
+    "RunBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Run_Backward.blockyanim"
+        }
+      ]
+    },
+    "Sprint": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Sprint.blockyanim"
+        }
+      ]
+    },
+    "Jump": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Jump.blockyanim"
+        }
+      ]
+    },
+    "Fall": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Fall.blockyanim"
+        }
+      ]
+    },
+    "Hurt": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Damage/Hurt.blockyanim"
+        }
+      ]
+    },
+    "Death": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Damage/Death.blockyanim"
+        }
+      ]
+    },
+    "Spawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Spawn.blockyanim"
+        }
+      ]
+    },
+    "Despawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Despawn2.blockyanim"
+        }
+      ]
+    },
+    "Alerted": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Alerted.blockyanim"
+        }
+      ]
+    },
+    "Attack_Left": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Attacks/Swing_Left.blockyanim"
+        }
+      ]
+    },
+    "Attack_Right": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Attacks/Swing_Right.blockyanim"
+        }
+      ]
+    },
+    "Climb_Up": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Climb/Climb_Up.blockyanim"
+        }
+      ]
+    },
+    "Climb_Down": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Climb/Climb_Down.blockyanim"
+        }
+      ]
+    },
+    "Climb_Idle": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Climb/Climb_Idle.blockyanim"
+        }
+      ]
+    },
+    "Crouch": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Crouch.blockyanim"
+        }
+      ]
+    },
+    "CrouchWalk": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Crouch_Walk.blockyanim"
+        }
+      ]
+    },
+    "CrouchWalkBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Default/Crouch_Walk_Backward.blockyanim"
+        }
+      ]
+    },
+    "Mantle": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Mantle/springtrap_window_entry.blockyanim"
+        }
+      ]
+    }
+  }
+}

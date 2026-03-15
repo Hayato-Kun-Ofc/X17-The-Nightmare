@@ -1,0 +1,95 @@
+{
+  "Icon": "Icons/Items/Trophy/X_17/X_17_Trophy_Icon.png",
+  "Quality": "Legendary",
+  "TranslationProperties": {
+    "Name": "hk.items.Deco_X_17_Trophy.name",
+    "Description": "hk.items.Deco_X_17_Trophy.description"
+  },
+  "MaxStack": 10,
+  "UsePlayerAnimations": false,
+  "DropOnDeath": true,
+  "BlockType": {
+    "DrawType": "Model",
+    "CustomModel": "Blocks/Trophy/X_17/Models/X_17_Trophy.blockymodel",
+    "Material": "Solid",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Trophy/X_17/Models/X_17_Trophy.png"
+      }
+    ],
+    "Opacity": "Transparent",
+    "BlockParticleSetId": "Metal",
+    "VariantRotation": "NESW",
+    "MaxSupportDistance": 8,
+    "BlockSoundSetId": "Bone",
+    "Support": {
+      "Down": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Pickaxe"
+      }
+    },
+    "Flags": {
+      "IsStackable": true
+    },
+    "HitboxType": "X_17_Trophy_Hitbox",
+    "CustomModelScale": 0.5,
+    "CubeShadingMode": "Standard",
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "ChangeState",
+            "Changes": {
+              "default": "Moving"
+            },
+            "RunTime": 3.0,
+            "Next": {
+              "Type": "ChangeState",
+              "Changes": {
+                "Moving": "default"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "State": {
+      "Definitions": {
+        "Moving": {
+          "CustomModelAnimation": "Blocks/Trophy/X_17/Models/Animations/Movingawhile.blockyanim"
+        }
+      }
+    }
+  },
+  "Interactions": {
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
+  },
+  "Variant": false,
+  "IconProperties": {
+    "Scale": 0.5,
+    "Rotation": [
+      0,
+      45,
+      0
+    ],
+    "Translation": [
+      0,
+      -19
+    ]
+  },
+  "PlayerAnimationsId": "Block",
+  "Tags": {
+    "Type": [
+      "Deco"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "Scale": 2
+}

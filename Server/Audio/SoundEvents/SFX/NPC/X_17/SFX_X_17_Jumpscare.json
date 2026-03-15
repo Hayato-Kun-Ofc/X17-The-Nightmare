@@ -1,0 +1,16 @@
+{
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/NPC/X_17/Jumpscare.ogg"
+      ],
+      "Probability": 10
+    }
+  ],
+  "Volume": 10,
+  "PreventSoundInterruption": true,
+  "AudioCategory": "AudioCat_NPC_X_17",
+  "Parent": "SFX_Attn_Loud",
+  "MaxDistance": 100,
+  "StartAttenuationDistance": 20
+}

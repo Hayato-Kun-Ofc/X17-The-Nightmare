@@ -1,0 +1,22 @@
+{
+  "Group": "HK",
+  "Name": "X-17 The Nightmare",
+  "Version": "0.2.4",
+  "Description": "A horror mod for those that want to have a nightmare kind of experience",
+  "Authors": [
+    {
+      "Name": "hayato_kun_ofc",
+      "Email": "deadpan028@gmail.com",
+      "Url": ""
+    }
+  ],
+  "Website": "https://www.curseforge.com/hytale/mods/x-17-the-nightmare",
+  "ServerVersion": "2026.02.19-1a311a592",
+  "Dependencies": {
+    "Hytale:EntityModule": "*"
+  },
+  "OptionalDependencies": {},
+  "DisabledByDefault": false,
+  "Main": "dev.hytalemod.x17.X17Plugin",
+  "IncludesAssetPack": true
+}

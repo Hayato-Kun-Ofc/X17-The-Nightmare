@@ -1,0 +1,22 @@
+{
+    "Layers": [
+        {
+            "Files": [
+                "Sounds/NPC/X_17/HESAWU.ogg"
+            ],
+            "RandomSettings": {
+                "MinVolume": -1,
+                "MaxVolume": 1,
+                "MinPitch": -0.5,
+                "MaxPitch": 0.5
+            },
+            "Probability": 20
+        }
+    ],
+    "Volume": 8.0,
+    "PreventSoundInterruption": true,
+    "AudioCategory": "AudioCat_NPC_X_17",
+    "Parent": "SFX_Attn_Loud",
+    "MaxDistance": 100,
+    "StartAttenuationDistance": 10
+}

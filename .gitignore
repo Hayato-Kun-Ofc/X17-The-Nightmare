@@ -1,0 +1,26 @@
+# Logs
+UserData/Logs/
+x17_logs/
+*.log
+
+# State
+UserData/Saves/
+x17_scheduler/
+
+# Compiled class file
+*.class
+
+# Package Files
+*.jar
+*.zip
+
+# IDE configurations
+.idea/
+.vscode/
+vscode/
+*.iml
+
+# Reference folders
+Classes_References_Sources_Etc/
+libs/
+docs/
