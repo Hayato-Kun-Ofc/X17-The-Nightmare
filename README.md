@@ -31,10 +31,15 @@ We have provided an extensive, multi-chapter Wiki explaining every detail of the
 
 The mod is written in Java utilizing the Hytale ECS (Entity Component System) and focuses heavily on data persistence and thread safety.
 
-- **`X17NightScheduler`**: Handles atomic, crash-safe saving of the current night cycle.
-- **`X17AISystem`**: The brain. Manages the 9-state state machine and spatial awareness.
-- **`X17SoundSystem`**: Scans the 3D environment for architectural blocks (doors/windows) to trigger deceptive, localized audio.
-- **`X17EventSystem`**: Bridges standard Hytale events (PlayerConnect, TimeChange) to the custom X17 logic.
+- **`X17Plugin.java`**: The main class. Registers the custom components (`x17:ai_controller`, `x17:player_state`) and initializes the systems.
+- **`component/`**: Contains data wrappers attached to the entity (`X17AIComponent`) and to players (`X17PlayerComponent`).
+- **`system/`**: Contains the ticking logic. 
+  - `X17AISystem`: Controls movement, teleportation, stalking logic, and rage chases.
+  - `X17DamageSystem`: Handles the hit counter necessary for escaping Rage.
+  - `X17EventSystem`: Hooks into server dusk/dawn events and manages player logins.
+  - `X17SoundSystem`: Controls dynamic, spatial audio cues.
+- **`scheduler/`**: Contains the `X17NightScheduler`, responsible for randomizing nights and writing outcomes to local `.properties` files.
+- **`ui/`**: Contains Java code rendering the `X17WelcomePage` UI.
 
 ## ⚠️ Requirements
 
