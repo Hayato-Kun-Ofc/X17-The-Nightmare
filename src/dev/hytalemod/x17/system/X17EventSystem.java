@@ -92,8 +92,7 @@ public class X17EventSystem {
 
         scheduler.tick(isNight, worldName);
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬ Night transition: day Ã¢â€ â€™ night
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // Night transition: day night
         if (isNight && !lastKnownNight) {
             prepareNightDirective();
             applyNightDecision(store);
@@ -216,7 +215,7 @@ public class X17EventSystem {
                         if (ai == null)
                             continue;
 
-                        // Only update the flags that change at runtime Ã¢â‚¬â€ NOT the budget.
+                        // Only update the flags that change at runtime, not the budget.
                         ai.setSpawnAllowedThisNight(allowSpawn);
                         ai.setGhostSoundNight(ghostNight);
                     }
