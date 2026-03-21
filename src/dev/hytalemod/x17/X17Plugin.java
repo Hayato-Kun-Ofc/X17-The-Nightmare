@@ -17,6 +17,8 @@ import dev.hytalemod.x17.system.X17AISystem;
 import dev.hytalemod.x17.system.X17DamageSystem;
 import dev.hytalemod.x17.system.X17EventSystem;
 import dev.hytalemod.x17.system.X17SoundSystem;
+import dev.hytalemod.x17.system.X17TorchExtinguishSystem;
+import dev.hytalemod.x17.system.X17ItemStealSystem;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -25,7 +27,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.2.4
+ * X17Plugin - v0.2.5
  */
 public class X17Plugin extends JavaPlugin {
 
@@ -48,7 +50,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.2.4 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.2.5 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
@@ -66,14 +68,20 @@ public class X17Plugin extends JavaPlugin {
 
         final X17AISystem aiSystem = new X17AISystem();
         final X17SoundSystem soundSystem = new X17SoundSystem();
+        final X17TorchExtinguishSystem torchSystem = new X17TorchExtinguishSystem();
+        final X17ItemStealSystem stealSystem = new X17ItemStealSystem();
+        
         aiSystem.setSoundSystem(soundSystem);
+        aiSystem.setTorchSystem(torchSystem);
+        aiSystem.setStealSystem(stealSystem);
+        aiSystem.setScheduler(scheduler);
         soundSystem.setScheduler(scheduler);
 
         try {
             getEntityStoreRegistry().registerSystem(aiSystem);
             getEntityStoreRegistry().registerSystem(new X17DamageSystem(aiSystem));
             getEntityStoreRegistry().registerSystem(soundSystem);
-            log(Level.INFO, "Registered: X17AISystem, X17DamageSystem, X17SoundSystem");
+            log(Level.INFO, "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17TorchExtinguishSystem, X17ItemStealSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }
@@ -107,9 +115,9 @@ public class X17Plugin extends JavaPlugin {
             EntityTickingSystem<EntityStore> forceDespawnTick = new EntityTickingSystem<EntityStore>() {
                 @Override
                 public void tick(float deltaTime, int index,
-                                 ArchetypeChunk<EntityStore> chunk,
-                                 Store<EntityStore> store,
-                                 CommandBuffer<EntityStore> commandBuffer) {
+                        ArchetypeChunk<EntityStore> chunk,
+                        Store<EntityStore> store,
+                        CommandBuffer<EntityStore> commandBuffer) {
                     try {
                         X17AIComponent ai = (X17AIComponent) chunk.getComponent(
                                 index, X17AIComponent.getComponentType());

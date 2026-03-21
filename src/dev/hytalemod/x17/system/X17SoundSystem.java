@@ -22,10 +22,11 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.2.4
+ * X17SoundSystem - v0.2.5
  *
  * Sound pacing is synchronized with scheduler decisions:
- * spawn nights get deceptive local sounds, ghost nights get rarer remote sounds,
+ * spawn nights get deceptive local sounds, ghost nights get rarer remote
+ * sounds,
  * silent nights remain truly quiet.
  */
 public class X17SoundSystem extends TickingSystem<EntityStore> {
@@ -41,9 +42,9 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private static final int COOLDOWN_GHOST_MIN = 950;
     private static final int COOLDOWN_GHOST_MAX = 1500;
 
-    private static final String SND_DOOR_KNOCK   = "SFX_X_17_DoorKnock";
+    private static final String SND_DOOR_KNOCK = "SFX_X_17_DoorKnock";
     private static final String SND_WINDOW_KNOCK = "SFX_X_17_WindowKnock";
-    private static final String SND_WHISPERS     = "SFX_X_17_Stalk";
+    private static final String SND_WHISPERS = "SFX_X_17_Stalk";
 
     private static final Set<String> VALID_DOORS = new HashSet<>(Arrays.asList(
             "furniture_ancient_door", "furniture_ancient_trapdoor",
@@ -104,8 +105,8 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private final Random rng = new Random();
 
     // State flags set by X17AISystem
-    private volatile boolean  rageActive         = false;
-    private volatile boolean  scareSoundPending  = false;
+    private volatile boolean rageActive = false;
+    private volatile boolean scareSoundPending = false;
     private volatile Vector3d scareSoundPosition = null;
 
     private static final String SND_AMBUSH_SCARE = "SFX_X_17_Scare";
@@ -114,15 +115,18 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
         this.scheduler = scheduler;
     }
 
-    /** Called by X17AISystem when ambush scare triggers. Plays scare sting next tick. */
+    /**
+     * Called by X17AISystem when ambush scare triggers. Plays scare sting next
+     * tick.
+     */
     public void notifyAmbushScare(Vector3d x17Position) {
-        scareSoundPending  = true;
+        scareSoundPending = true;
         scareSoundPosition = x17Position;
     }
 
     /** Suppresses ambient sounds while X17 is in RAGE. */
     public void notifyRageActivated() {
-        rageActive   = true;
+        rageActive = true;
         cooldownLeft = 0;
     }
 
@@ -136,7 +140,7 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
         try {
             // Scare sting has highest priority — fire immediately when pending.
             if (scareSoundPending && scareSoundPosition != null) {
-                scareSoundPending  = false;
+                scareSoundPending = false;
                 Vector3d pos = scareSoundPosition;
                 scareSoundPosition = null;
                 triggerSound(SND_AMBUSH_SCARE, pos, store);
@@ -145,7 +149,8 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
             }
 
             // During RAGE, suppress all ambient stalker sounds.
-            if (rageActive) return;
+            if (rageActive)
+                return;
 
             if (cooldownLeft > 0) {
                 cooldownLeft--;

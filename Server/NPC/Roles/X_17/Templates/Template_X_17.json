@@ -112,7 +112,10 @@
       "MaxFallSpeed": 25,
       "MaxRotationSpeed": 540,
       "Acceleration": 15,
-      "MinJumpHeight": 1.5
+      "MaxClimbHeight": 2,
+      "MinJumpHeight": 1.5,
+      "JumpHeight": 2.0,
+      "JumpForce": 1.5
     }
   ],
   "MaxHealth": {
@@ -396,5 +399,6 @@
   ],
   "NameTranslationKey": {
     "Compute": "NameTranslationKey"
-  }
+  },
+  "KnockbackScale": 0.2
 }

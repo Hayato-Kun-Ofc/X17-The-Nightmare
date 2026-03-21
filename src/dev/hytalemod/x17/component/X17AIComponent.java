@@ -9,9 +9,10 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X17AIComponent - v0.2.4
+ * X17AIComponent - v0.2.5
  *
- * Holds the full runtime state for the X17 director-style AI.
+ * Stores the state and configuration for the X17 entity, including timers,
+ * night-specific directives, and movement budgets.
  */
 public class X17AIComponent implements Component<EntityStore> {
 
@@ -20,7 +21,6 @@ public class X17AIComponent implements Component<EntityStore> {
         STALK,
         CHASE,
         RAGE,
-        VANISH,
         RETREAT,
         AMBUSH_SCARE,
         HUNT_APPROACH,
@@ -132,6 +132,9 @@ public class X17AIComponent implements Component<EntityStore> {
             .addField(new KeyedCodec<>("AttackAttemptedThisNight", Codec.BOOLEAN),
                     (c, v) -> c.attackAttemptedThisNight = v,
                     c -> c.attackAttemptedThisNight)
+            .addField(new KeyedCodec<>("RequestNpcVanish", Codec.BOOLEAN),
+                    (c, v) -> c.requestNpcVanish = v,
+                    c -> c.requestNpcVanish)
             .build();
 
     private X17State currentState = X17State.DORMANT;
@@ -160,6 +163,7 @@ public class X17AIComponent implements Component<EntityStore> {
     private int appearanceHoldTicks = 0;
     private int lookExposureTicks = 0;
     private boolean attackAttemptedThisNight = false;
+    private boolean requestNpcVanish = false;
 
     public X17AIComponent() {
     }
@@ -191,6 +195,7 @@ public class X17AIComponent implements Component<EntityStore> {
         this.appearanceHoldTicks = other.appearanceHoldTicks;
         this.lookExposureTicks = other.lookExposureTicks;
         this.attackAttemptedThisNight = other.attackAttemptedThisNight;
+        this.requestNpcVanish = other.requestNpcVanish;
     }
 
     public static void init(ComponentType<EntityStore, X17AIComponent> type) {
@@ -201,8 +206,13 @@ public class X17AIComponent implements Component<EntityStore> {
         return COMPONENT_TYPE;
     }
 
+    // -------------------------------------------------------------------------
+    // Night directive
+    // -------------------------------------------------------------------------
+
     public void configureNightDirective(int nightNumber, boolean spawnAllowed, boolean ghostNight,
             boolean attackNight, int spawnDelayTicks, int presenceBudgetTicks) {
+
         boolean directiveChanged = currentNightNumber != nightNumber
                 || spawnAllowedThisNight != spawnAllowed
                 || ghostSoundNight != ghostNight
@@ -222,18 +232,19 @@ public class X17AIComponent implements Component<EntityStore> {
             actionCooldownTicks = 0;
             repositionCooldownTicks = 0;
             nightPresenceBudgetTicks = 0;
-            if (currentState != X17State.DORMANT && currentState != X17State.VANISH) {
-                currentState = X17State.VANISH;
+            // Use TRUE_VANISH only when transitioning out of an active state
+            if (currentState != X17State.DORMANT && currentState != X17State.TRUE_VANISH) {
+                currentState = X17State.TRUE_VANISH;
                 vanishTimerTicks = 1;
+                requestNpcVanish = true;
             } else if (currentState == X17State.DORMANT) {
                 spawnCooldownTicks = Math.max(spawnCooldownTicks, 200);
             }
             return;
         }
 
-        if (!directiveChanged) {
+        if (!directiveChanged)
             return;
-        }
 
         spawnCheckDone = false;
         fledFromCombat = false;
@@ -252,6 +263,7 @@ public class X17AIComponent implements Component<EntityStore> {
         attackAttemptedThisNight = false;
         currentState = X17State.DORMANT;
         vanishTimerTicks = 0;
+        requestNpcVanish = false;
         if (spawnCooldownTicks < spawnDelayTicks) {
             spawnCooldownTicks = spawnDelayTicks;
         }
@@ -261,74 +273,73 @@ public class X17AIComponent implements Component<EntityStore> {
         if (attackerRef != null && attackerRef.isValid()) {
             aggroTargetEntityId = attackerRef.getIndex();
         }
-
-        if (hitWindowTicks <= 0) {
+        if (hitWindowTicks <= 0)
             combatHitCount = 0;
-        }
-
         hitWindowTicks = HIT_WINDOW_TICKS;
         combatHitCount++;
         attackAttemptedThisNight = true;
         appearanceHoldTicks = 0;
         lookExposureTicks = 0;
         falseAmbush = false;
-
         fledFromCombat = true;
-        currentState = X17State.VANISH;
+        // Transition to TRUE_VANISH on combat escape
+        currentState = X17State.TRUE_VANISH;
         vanishTimerTicks = 1;
+        requestNpcVanish = true;
         huntCommitmentTicks = 0;
         chaseDurationTicks = 0;
         spawnCooldownTicks = COMBAT_ESCAPE_COOLDOWN;
     }
 
+    // -------------------------------------------------------------------------
+    // Getters / Setters
+    // -------------------------------------------------------------------------
+
     public X17State getCurrentState() {
         return currentState;
     }
 
-    public void setCurrentState(X17State currentState) {
-        this.currentState = currentState;
+    public void setCurrentState(X17State s) {
+        this.currentState = s;
     }
 
     public int getSpawnCooldownTicks() {
         return spawnCooldownTicks;
     }
 
-    public void setSpawnCooldownTicks(int spawnCooldownTicks) {
-        this.spawnCooldownTicks = Math.max(0, spawnCooldownTicks);
+    public void setSpawnCooldownTicks(int v) {
+        spawnCooldownTicks = Math.max(0, v);
     }
 
     public void decrementSpawnCooldown() {
-        if (spawnCooldownTicks > 0) {
+        if (spawnCooldownTicks > 0)
             spawnCooldownTicks--;
-        }
     }
 
     public int getVanishTimerTicks() {
         return vanishTimerTicks;
     }
 
-    public void setVanishTimerTicks(int vanishTimerTicks) {
-        this.vanishTimerTicks = Math.max(0, vanishTimerTicks);
+    public void setVanishTimerTicks(int v) {
+        vanishTimerTicks = Math.max(0, v);
     }
 
     public void decrementVanishTimer() {
-        if (vanishTimerTicks > 0) {
+        if (vanishTimerTicks > 0)
             vanishTimerTicks--;
-        }
     }
 
     public int getHitWindowTicks() {
         return hitWindowTicks;
     }
 
-    public void setHitWindowTicks(int hitWindowTicks) {
-        this.hitWindowTicks = Math.max(0, hitWindowTicks);
+    public void setHitWindowTicks(int v) {
+        hitWindowTicks = Math.max(0, v);
     }
 
     public void decrementHitWindow() {
-        if (hitWindowTicks > 0) {
+        if (hitWindowTicks > 0)
             hitWindowTicks--;
-        }
     }
 
     public int getChaseDurationTicks() {
@@ -359,8 +370,8 @@ public class X17AIComponent implements Component<EntityStore> {
         return aggroTargetEntityId;
     }
 
-    public void setAggroTargetEntityId(int aggroTargetEntityId) {
-        this.aggroTargetEntityId = aggroTargetEntityId;
+    public void setAggroTargetEntityId(int v) {
+        aggroTargetEntityId = v;
     }
 
     public double getLastKnownPlayerX() {
@@ -385,62 +396,61 @@ public class X17AIComponent implements Component<EntityStore> {
         return spawnCheckDone;
     }
 
-    public void setSpawnCheckDone(boolean spawnCheckDone) {
-        this.spawnCheckDone = spawnCheckDone;
+    public void setSpawnCheckDone(boolean v) {
+        spawnCheckDone = v;
     }
 
     public boolean hasFledFromCombat() {
         return fledFromCombat;
     }
 
-    public void setFledFromCombat(boolean fledFromCombat) {
-        this.fledFromCombat = fledFromCombat;
+    public void setFledFromCombat(boolean v) {
+        fledFromCombat = v;
     }
 
     public boolean isFalseAmbush() {
         return falseAmbush;
     }
 
-    public void setFalseAmbush(boolean falseAmbush) {
-        this.falseAmbush = falseAmbush;
+    public void setFalseAmbush(boolean v) {
+        falseAmbush = v;
     }
 
     public int getAmbushScareCooldownTicks() {
         return ambushScareCooldownTicks;
     }
 
-    public void setAmbushScareCooldownTicks(int ambushScareCooldownTicks) {
-        this.ambushScareCooldownTicks = Math.max(0, ambushScareCooldownTicks);
+    public void setAmbushScareCooldownTicks(int v) {
+        ambushScareCooldownTicks = Math.max(0, v);
     }
 
     public void decrementAmbushScareCooldown() {
-        if (ambushScareCooldownTicks > 0) {
+        if (ambushScareCooldownTicks > 0)
             ambushScareCooldownTicks--;
-        }
     }
 
     public boolean isSpawnAllowedThisNight() {
         return spawnAllowedThisNight;
     }
 
-    public void setSpawnAllowedThisNight(boolean spawnAllowedThisNight) {
-        this.spawnAllowedThisNight = spawnAllowedThisNight;
+    public void setSpawnAllowedThisNight(boolean v) {
+        spawnAllowedThisNight = v;
     }
 
     public boolean isGhostSoundNight() {
         return ghostSoundNight;
     }
 
-    public void setGhostSoundNight(boolean ghostSoundNight) {
-        this.ghostSoundNight = ghostSoundNight;
+    public void setGhostSoundNight(boolean v) {
+        ghostSoundNight = v;
     }
 
     public boolean isAttackNight() {
         return attackNight;
     }
 
-    public void setAttackNight(boolean attackNight) {
-        this.attackNight = attackNight;
+    public void setAttackNight(boolean v) {
+        attackNight = v;
     }
 
     public int getCurrentNightNumber() {
@@ -451,92 +461,86 @@ public class X17AIComponent implements Component<EntityStore> {
         return nightPresenceBudgetTicks;
     }
 
-    public void setNightPresenceBudgetTicks(int nightPresenceBudgetTicks) {
-        this.nightPresenceBudgetTicks = Math.max(0, nightPresenceBudgetTicks);
+    public void setNightPresenceBudgetTicks(int v) {
+        nightPresenceBudgetTicks = Math.max(0, v);
     }
 
     public void decrementNightPresenceBudget() {
-        if (nightPresenceBudgetTicks > 0) {
+        if (nightPresenceBudgetTicks > 0)
             nightPresenceBudgetTicks--;
-        }
     }
 
     public int getActionCooldownTicks() {
         return actionCooldownTicks;
     }
 
-    public void setActionCooldownTicks(int actionCooldownTicks) {
-        this.actionCooldownTicks = Math.max(0, actionCooldownTicks);
+    public void setActionCooldownTicks(int v) {
+        actionCooldownTicks = Math.max(0, v);
     }
 
     public void decrementActionCooldown() {
-        if (actionCooldownTicks > 0) {
+        if (actionCooldownTicks > 0)
             actionCooldownTicks--;
-        }
     }
 
     public int getRepositionCooldownTicks() {
         return repositionCooldownTicks;
     }
 
-    public void setRepositionCooldownTicks(int repositionCooldownTicks) {
-        this.repositionCooldownTicks = Math.max(0, repositionCooldownTicks);
+    public void setRepositionCooldownTicks(int v) {
+        repositionCooldownTicks = Math.max(0, v);
     }
 
     public void decrementRepositionCooldown() {
-        if (repositionCooldownTicks > 0) {
+        if (repositionCooldownTicks > 0)
             repositionCooldownTicks--;
-        }
     }
 
     public int getHuntCommitmentTicks() {
         return huntCommitmentTicks;
     }
 
-    public void setHuntCommitmentTicks(int huntCommitmentTicks) {
-        this.huntCommitmentTicks = Math.max(0, huntCommitmentTicks);
+    public void setHuntCommitmentTicks(int v) {
+        huntCommitmentTicks = Math.max(0, v);
     }
 
     public void decrementHuntCommitment() {
-        if (huntCommitmentTicks > 0) {
+        if (huntCommitmentTicks > 0)
             huntCommitmentTicks--;
-        }
     }
 
     public int getHighGroundPunishCooldownTicks() {
         return highGroundPunishCooldownTicks;
     }
 
-    public void setHighGroundPunishCooldownTicks(int highGroundPunishCooldownTicks) {
-        this.highGroundPunishCooldownTicks = Math.max(0, highGroundPunishCooldownTicks);
+    public void setHighGroundPunishCooldownTicks(int v) {
+        highGroundPunishCooldownTicks = Math.max(0, v);
     }
 
     public void decrementHighGroundPunishCooldown() {
-        if (highGroundPunishCooldownTicks > 0) {
+        if (highGroundPunishCooldownTicks > 0)
             highGroundPunishCooldownTicks--;
-        }
     }
 
     public int getAppearanceHoldTicks() {
         return appearanceHoldTicks;
     }
 
-    public void setAppearanceHoldTicks(int appearanceHoldTicks) {
-        this.appearanceHoldTicks = Math.max(0, appearanceHoldTicks);
+    public void setAppearanceHoldTicks(int v) {
+        appearanceHoldTicks = Math.max(0, v);
     }
 
     public void decrementAppearanceHold() {
-        if (appearanceHoldTicks > 0) {
+        if (appearanceHoldTicks > 0)
             appearanceHoldTicks--;
-        }
     }
 
     public int getLookExposureTicks() {
         return lookExposureTicks;
     }
 
-    public void setLookExposureTicks(int lookExposureTicks) {
-        this.lookExposureTicks = Math.max(0, lookExposureTicks);
+    public void setLookExposureTicks(int v) {
+        lookExposureTicks = Math.max(0, v);
     }
 
     public void incrementLookExposureTicks() {
@@ -544,17 +548,29 @@ public class X17AIComponent implements Component<EntityStore> {
     }
 
     public void decrementLookExposureTicks() {
-        if (lookExposureTicks > 0) {
+        if (lookExposureTicks > 0)
             lookExposureTicks--;
-        }
     }
 
     public boolean isAttackAttemptedThisNight() {
         return attackAttemptedThisNight;
     }
 
-    public void setAttackAttemptedThisNight(boolean attackAttemptedThisNight) {
-        this.attackAttemptedThisNight = attackAttemptedThisNight;
+    public void setAttackAttemptedThisNight(boolean v) {
+        attackAttemptedThisNight = v;
+    }
+
+    /** Consumed once per tick by X17AISystem, then auto-cleared. */
+    public boolean consumeNpcVanishRequest() {
+        if (requestNpcVanish) {
+            requestNpcVanish = false;
+            return true;
+        }
+        return false;
+    }
+
+    public void setRequestNpcVanish(boolean v) {
+        requestNpcVanish = v;
     }
 
     @Override

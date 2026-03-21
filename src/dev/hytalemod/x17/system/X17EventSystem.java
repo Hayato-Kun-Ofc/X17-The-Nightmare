@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v2.4
+ * X17EventSystem - v0.2.5
  */
 public class X17EventSystem {
 
@@ -92,21 +92,28 @@ public class X17EventSystem {
 
         scheduler.tick(isNight, worldName);
 
+<<<<<<< HEAD
         // Night transition: day night
+=======
+        // Night transition
+>>>>>>> 2c02588 (v0.2.5: Documentation update, Item Stealing system, and code cleanup)
         if (isNight && !lastKnownNight) {
             prepareNightDirective();
             applyNightDecision(store);
             javaSpawnDoneThisNight = false;
             javaSpawnRetryCooldownTicks = 0;
 
-            // Reset the per-night cycle counter in the AI system.
+            // Reset the per-night cycle counter in the AI system (spawn nights only).
             if (scheduler.shouldSpawnThisNight()) {
                 aiSystem.resetNightCycles();
             }
+            // Reset torch decision EVERY night (spawn and non-spawn alike).
+            // This ensures ghost nights still get the effect.
+            aiSystem.resetTorchNight();
 
-            // BUG FIX 1: On a new spawn night, reconfigure the existing entity
+            // On a new spawn night, reconfigure the existing entity
             // (if it survived from a previous night) with the new night's budget
-            // and directives don't just skip it because "entity count > 0".
+            // and directives.
             reconfigureExistingEntityForNewNight(store);
         }
 
@@ -119,10 +126,18 @@ public class X17EventSystem {
             tryEnsureJavaSpawn(store);
         }
 
-        // BUG FIX 2: synchronizeNightDirective only pushes spawn/ghost flags,
-        // NOT the budget, budget is only set once per night in
-        // reconfigureExistingEntityForNewNight / ensureX17AIComponent.
+        // Implementation detail: synchronizeSpawnFlags only pushes spawn/ghost flags,
+        // NOT the budget — budget is only set once per night.
         synchronizeSpawnFlags(store, isNight);
+
+        if (isNight) {
+            EntityStore rootEs = (EntityStore) store.getExternalData();
+            World world = (rootEs != null) ? rootEs.getWorld() : null;
+            if (world != null) {
+                aiSystem.updateWorldTorchLogic(world, store);
+                aiSystem.updateWorldStealLogic(world, store);
+            }
+        }
 
         lastKnownNight = isNight;
     }
@@ -142,7 +157,7 @@ public class X17EventSystem {
     }
 
     /**
-     * BUG FIX 1 - called once at the start of each night.
+     * Called once at the start of each night.
      *
      * The X17 entity may still exist from a previous night (sitting DORMANT with
      * exhausted budget). Instead of skipping it because "entity count > 0",
@@ -195,13 +210,10 @@ public class X17EventSystem {
     }
 
     /**
-     * BUG FIX 2 -replaces synchronizeNightDirective.
+     * Replaces synchronizeNightDirective.
      *
-     * The old version called configureNightDirective every single tick, which
-     * meant the presence budget was RESET to its starting value on every tick
-     * 
-     * X17 would never exhaust its budget. This version only pushes the lightweight
-     * spawn/ghost boolean flags, leaving the budget untouched.
+     * This version only pushes the lightweight spawn/ghost boolean flags,
+     * leaving the budget untouched to avoid resets during the night.
      */
     private void synchronizeSpawnFlags(Store<EntityStore> store, boolean isNight) {
         final boolean allowSpawn = isNight && scheduler.shouldSpawnThisNight();
@@ -215,7 +227,7 @@ public class X17EventSystem {
                         if (ai == null)
                             continue;
 
-                        // Only update the flags that change at runtime, not the budget.
+                        // Only update the flags that change at runtime - NOT the budget.
                         ai.setSpawnAllowedThisNight(allowSpawn);
                         ai.setGhostSoundNight(ghostNight);
                     }
@@ -302,7 +314,7 @@ public class X17EventSystem {
         ai.setAttackNight(false);
 
         X17AIComponent.X17State state = ai.getCurrentState();
-        if (state == X17AIComponent.X17State.DORMANT || state == X17AIComponent.X17State.VANISH) {
+        if (state == X17AIComponent.X17State.DORMANT || state == X17AIComponent.X17State.TRUE_VANISH) {
             if (ai.getSpawnCooldownTicks() < 200) {
                 ai.setSpawnCooldownTicks(200);
             }
@@ -312,7 +324,7 @@ public class X17EventSystem {
             return;
         }
 
-        ai.setCurrentState(X17AIComponent.X17State.VANISH);
+        ai.setCurrentState(X17AIComponent.X17State.TRUE_VANISH);
         ai.setVanishTimerTicks(1);
     }
 
@@ -330,10 +342,9 @@ public class X17EventSystem {
             return;
         }
 
-        // BUG FIX 3: The old code checked entity count > 0 and skipped spawning.
-        // This caused X17 to never respawn after night 1 because the entity
-        // persists as DORMANT between nights. Instead, we only skip if
-        // reconfigureExistingEntityForNewNight already handled an existing entity.
+        // Checking existing entities.
+        // X17 may persist as DORMANT between nights, so we allow configuration
+        // even if count > 0.
         int x17Count = store.getEntityCountFor(X17AIComponent.getComponentType());
         if (x17Count > 0) {
             javaSpawnDoneThisNight = true;
