@@ -92,11 +92,7 @@ public class X17EventSystem {
 
         scheduler.tick(isNight, worldName);
 
-<<<<<<< HEAD
-        // Night transition: day night
-=======
         // Night transition
->>>>>>> 2c02588 (v0.2.5: Documentation update, Item Stealing system, and code cleanup)
         if (isNight && !lastKnownNight) {
             prepareNightDirective();
             applyNightDecision(store);
