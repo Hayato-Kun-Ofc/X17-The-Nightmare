@@ -20,29 +20,29 @@ import dev.hytalemod.x17.X17Plugin;
 import java.util.logging.Level;
 
 /**
- * X17WelcomePage — v0.2.4
+ * X17WelcomePage — v0.2.5
  *
- * Tela de boas-vindas mostrado a cada jogador na primeira ligação.
- * Usa o sistema InteractiveCustomUIPage confirmado em
+ * Welcome screen shown to every player on their first connection.
+ * Uses the InteractiveCustomUIPage system confirmed in
  * LaunchPadSettingsPage.class.
  *
- * O écran é fechado quando o jogador clica no botão (@Close event).
- * Marcado como "temporário" — não reaparece após ser fechado (guardado em
+ * The screen is closed when the player clicks the button (@Close event).
+ * Marked as "temporary" — does not reappear after being closed (stored in
  * PlayerData).
  *
- * Padrão confirmado:
+ * Confirmed pattern:
  * InteractiveCustomUIPage<EventData>
- * ficheiro .ui em Pages/X17WelcomePage.ui
+ * .ui file at Pages/X17WelcomePage.ui
  * CustomPageLifetime.UntilClosed
- * PageManager.setPage() para mostrar / Page.None para fechar
+ * PageManager.setPage() for showing / Page.None for closing
  */
 public class X17WelcomePage
         extends InteractiveCustomUIPage<X17WelcomePage.WelcomeEventData> {
 
-    // ── Caminho do ficheiro UI (relativo ao pack de assets do servidor) ───────
+    // ── UI file path (relative to the server's asset pack) ────────────────────
     private static final String UI_FILE = "Pages/X17WelcomePage.ui";
 
-    // ── Codec dos dados de evento ─────────────────────────────────────────────
+    // ── Event data codec ──────────────────────────────────────────────────────
     public static final BuilderCodec<WelcomeEventData> EVENT_CODEC = BuilderCodec
             .builder(WelcomeEventData.class, WelcomeEventData::new)
             .append(new KeyedCodec<>("Action", Codec.STRING),
@@ -50,23 +50,23 @@ public class X17WelcomePage
             .add()
             .build();
 
-    // ── Construtor ────────────────────────────────────────────────────────────
+    // ── Constructor ──────────────────────────────────────────────────────────
     public X17WelcomePage(PlayerRef playerRef) {
         super(playerRef, CustomPageLifetime.CanDismiss, EVENT_CODEC);
     }
 
-    // ── build: preenche o UI com dados dinâmicos ───────────────────────────────
-    // O texto vem das traduções definidas nos ficheiros .lang via chaves {ui.x17.*}
-    // Nenhum dado dinâmico extra necessário — tudo é i18n do lado do cliente.
+    // ── build: populates the UI with dynamic data ────────────────────────────
+    // Text comes from translations defined in .lang files via {ui.x17.*} keys.
+    // No extra dynamic data needed — everything is i18n on the client side.
     @Override
     public void build(Ref<EntityStore> entityRef,
             UICommandBuilder commandBuilder,
             UIEventBuilder eventBuilder,
             Store<EntityStore> store) {
-        // Carrega o layout do ficheiro .ui
+        // Load layout from the .ui file
         commandBuilder.append(UI_FILE);
 
-        // Liga o botão CloseButton ao evento "close"
+        // Bind CloseButton to the "close" event
         eventBuilder.addEventBinding(
                 CustomUIEventBindingType.Activating,
                 "#CloseButton",
@@ -74,7 +74,7 @@ public class X17WelcomePage
                 false);
     }
 
-    // ── handleDataEvent: reage ao clique do botão ─────────────────────────────
+    // ── handleDataEvent: reacts to button clicks ─────────────────────────────
     @Override
     public void handleDataEvent(Ref<EntityStore> entityRef,
             Store<EntityStore> store,
@@ -88,10 +88,10 @@ public class X17WelcomePage
         }
     }
 
-    // ── Dados de evento ───────────────────────────────────────────────────────
+    // ── Event data ────────────────────────────────────────────────────────────
     /**
-     * O único evento é o botão de fecho (@Close no .ui).
-     * Não transporta dados adicionais.
+     * The only event is the close button (@Close in the .ui).
+     * Does not carry additional data.
      */
     public static class WelcomeEventData {
         private String action;
@@ -100,10 +100,10 @@ public class X17WelcomePage
         }
     }
 
-    // ── Utilitário estático: mostra o écran a um jogador ─────────────────────
+    // ── Static utility: shows the screen to a player ──────────────────────────
     /**
-     * Chama este método no X17EventSystem quando um novo jogador entra.
-     * Exemplo:
+     * Call this method in X17EventSystem when a new player joins.
+     * Example:
      * X17WelcomePage.showTo(playerRef, entityStore);
      */
     public static void showTo(PlayerRef playerRef, Store<EntityStore> store) {
