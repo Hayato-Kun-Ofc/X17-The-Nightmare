@@ -40,7 +40,13 @@
       "shapeUvOffset": []
     },
     "Chest": {
-      "position": [],
+      "position": [
+        {
+          "time": 0,
+          "delta": {"x": 0, "y": 2, "z": 12},
+          "interpolationType": "linear"
+        }
+      ],
       "orientation": [
         {
           "time": 8,
@@ -226,8 +232,18 @@
           "interpolationType": "smooth"
         },
         {
-          "time": 11,
-          "delta": {"x": 0, "y": 0, "z": 0, "w": 1},
+          "time": 6,
+          "delta": {"x": 0.64219, "y": 0, "z": 0, "w": 0.76655},
+          "interpolationType": "smooth"
+        },
+        {
+          "time": 10,
+          "delta": {"x": 0.57971, "y": 0, "z": 0, "w": 0.81482},
+          "interpolationType": "smooth"
+        },
+        {
+          "time": 15,
+          "delta": {"x": 0.63608, "y": 0, "z": 0, "w": 0.77162},
           "interpolationType": "smooth"
         }
       ],
