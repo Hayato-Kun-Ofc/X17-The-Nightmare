@@ -20,7 +20,7 @@ public class X17PlayerComponent implements Component<EntityStore> {
 
     public static final BuilderCodec<X17PlayerComponent> CODEC = BuilderCodec
             .builder(X17PlayerComponent.class, X17PlayerComponent::new)
-            .append(new KeyedCodec<>("SeenWelcomeWorldsCSV", Codec.STRING),
+            .addField(new KeyedCodec<>("SeenWelcomeWorldsCSV", Codec.STRING),
                     (c, v) -> {
                         c.seenWelcomeWorlds.clear();
                         if (v != null && !v.isEmpty()) {
@@ -30,7 +30,6 @@ public class X17PlayerComponent implements Component<EntityStore> {
                         }
                     },
                     c -> String.join(",", c.seenWelcomeWorlds))
-            .add()
             .build();
 
     private Set<String> seenWelcomeWorlds = new HashSet<>();
