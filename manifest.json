@@ -1,7 +1,7 @@
 {
   "Group": "HK",
   "Name": "X-17 The Nightmare",
-  "Version": "0.2.5",
+  "Version": "0.2.6",
   "Description": "A horror mod for those that want to have a nightmare kind of experience",
   "Authors": [
     {
@@ -11,7 +11,7 @@
     }
   ],
   "Website": "https://www.curseforge.com/hytale/mods/x-17-the-nightmare",
-  "ServerVersion": "2026.02.19-1a311a592",
+  "ServerVersion": "2026.03.26-89796e57b",
   "Dependencies": {
     "Hytale:EntityModule": "*"
   },
