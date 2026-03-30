@@ -107,8 +107,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     // ── AMBUSH_SCARE ──────────────────────────────────────────────────────────
     private static final int AMBUSH_FREEZE_TICKS = 22;
-    private static final int POST_SCARE_VANISH_MIN = 1200; // 1 minute
-    private static final int POST_SCARE_VANISH_MAX = 2400; // 2 minutes
+    private static final int POST_SCARE_VANISH_MIN = 1200;
+    private static final int POST_SCARE_VANISH_MAX = 2400;
 
     // ── CHASE / RAGE ──────────────────────────────────────────────────────────
     private static final double RAGE_SPEED = 0.75;
@@ -116,8 +116,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final int RAGE_COMMIT_TICKS = 400;
 
     // ── TRUE_VANISH / end-of-night ────────────────────────────────────────────
-    private static final int END_NIGHT_VANISH_MIN = 1200; // 1 minute
-    private static final int END_NIGHT_VANISH_MAX = 2400; // 2 minutes
+    private static final int END_NIGHT_VANISH_MIN = 1200;
+    private static final int END_NIGHT_VANISH_MAX = 2400;
     private static final int WAITING_RANGE_MIN = 16;
     private static final int WAITING_RANGE_MAX = 24;
 
@@ -424,7 +424,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
         if (repositionsRemaining <= 0) {
             repositionsRemaining = randomBetween(NIGHT_REPOSITIONS_MIN, NIGHT_REPOSITIONS_MAX);
-            log(Level.WARNING, "[AI] enterStalk arrived with 0 repositions. Replenished budget: " + repositionsRemaining);
+            log(Level.WARNING,
+                    "[AI] enterStalk arrived with 0 repositions. Replenished budget: " + repositionsRemaining);
         }
 
         boolean returning = ai.isSpawnCheckDone();
@@ -893,7 +894,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         double yawDeltaFromBehind = Math.abs(normalizeAngle(
                 Math.atan2(candidate.getX() - playerPos.getX(),
                         candidate.getZ() - playerPos.getZ()) - behindYaw));
-        
+
         if (yawDeltaFromBehind <= 0.70)
             return 55;
         if (yawDeltaFromBehind <= 1.25)
