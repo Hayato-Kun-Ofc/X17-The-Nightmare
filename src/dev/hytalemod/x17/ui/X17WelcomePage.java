@@ -20,7 +20,7 @@ import dev.hytalemod.x17.X17Plugin;
 import java.util.logging.Level;
 
 /**
- * X17WelcomePage — v0.2.5
+ * X17WelcomePage — v0.2.7
  *
  * Welcome screen shown to every player on their first connection.
  * Uses the InteractiveCustomUIPage system confirmed in

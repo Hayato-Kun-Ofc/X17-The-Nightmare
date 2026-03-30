@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.2.5
+ * X17SoundSystem - v0.2.7
  *
  * Sound pacing is synchronized with scheduler decisions:
  * spawn nights get deceptive local sounds, ghost nights get rarer remote

@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.2.5
+ * X17AISystem - v0.2.7
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -107,8 +107,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     // ── AMBUSH_SCARE ──────────────────────────────────────────────────────────
     private static final int AMBUSH_FREEZE_TICKS = 22;
-    private static final int POST_SCARE_VANISH_MIN = 480;
-    private static final int POST_SCARE_VANISH_MAX = 780;
+    private static final int POST_SCARE_VANISH_MIN = 1200; // 1 minute
+    private static final int POST_SCARE_VANISH_MAX = 2400; // 2 minutes
 
     // ── CHASE / RAGE ──────────────────────────────────────────────────────────
     private static final double RAGE_SPEED = 0.75;
@@ -116,8 +116,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final int RAGE_COMMIT_TICKS = 400;
 
     // ── TRUE_VANISH / end-of-night ────────────────────────────────────────────
-    private static final int END_NIGHT_VANISH_MIN = 300;
-    private static final int END_NIGHT_VANISH_MAX = 500;
+    private static final int END_NIGHT_VANISH_MIN = 1200; // 1 minute
+    private static final int END_NIGHT_VANISH_MAX = 2400; // 2 minutes
     private static final int WAITING_RANGE_MIN = 16;
     private static final int WAITING_RANGE_MAX = 24;
 
@@ -422,8 +422,10 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private void enterStalk(X17AIComponent ai, TransformComponent x17tf,
             World world, TargetData target) {
 
-        if (repositionsRemaining <= 0)
-            return;
+        if (repositionsRemaining <= 0) {
+            repositionsRemaining = randomBetween(NIGHT_REPOSITIONS_MIN, NIGHT_REPOSITIONS_MAX);
+            log(Level.WARNING, "[AI] enterStalk arrived with 0 repositions. Replenished budget: " + repositionsRemaining);
+        }
 
         boolean returning = ai.isSpawnCheckDone();
         teleportToObservationPoint(x17tf, world, target.transform, returning);
@@ -513,7 +515,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         // Tiny chance: X17 just vanishes with a short cooldown.
         if (roll < 0.06) {
             log(Level.INFO, "[AI] Chose: phantom vanish. [" + personality + "]");
-            beginTrueVanish(ai, x17tf, 1, randomBetween(180, 360));
+            beginTrueVanish(ai, x17tf, 1, randomBetween(1200, 2400)); // 1 to 2 minutes
             return;
         }
 
@@ -887,16 +889,18 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
      * location.
      */
     private int scoreViewConcealment(Vector3d playerPos, double playerYaw, Vector3d candidate) {
-        double yawDelta = Math.abs(normalizeAngle(
+        double behindYaw = playerYaw + Math.PI;
+        double yawDeltaFromBehind = Math.abs(normalizeAngle(
                 Math.atan2(candidate.getX() - playerPos.getX(),
-                        candidate.getZ() - playerPos.getZ()) - playerYaw));
-        if (yawDelta >= 2.45)
+                        candidate.getZ() - playerPos.getZ()) - behindYaw));
+        
+        if (yawDeltaFromBehind <= 0.70)
             return 55;
-        if (yawDelta >= 1.85)
+        if (yawDeltaFromBehind <= 1.25)
             return 30;
-        if (yawDelta >= 1.25)
+        if (yawDeltaFromBehind <= 1.85)
             return 8;
-        if (yawDelta >= 0.70)
+        if (yawDeltaFromBehind <= 2.45)
             return -22;
         return -50;
     }

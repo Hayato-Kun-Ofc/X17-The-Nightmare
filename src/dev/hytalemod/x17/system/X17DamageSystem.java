@@ -17,7 +17,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * X17DamageSystem - v0.2.5
+ * X17DamageSystem - v0.2.7
  *
  * Extends DamageEventSystem and routes player-dealt damage to X17AISystem
  * so that RAGE state is triggered correctly — never via a timer.
