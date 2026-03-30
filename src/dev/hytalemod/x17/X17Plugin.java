@@ -27,7 +27,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.2.5
+ * X17Plugin - v0.2.7
  */
 public class X17Plugin extends JavaPlugin {
 
@@ -50,7 +50,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.2.5 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.2.7 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
@@ -70,7 +70,7 @@ public class X17Plugin extends JavaPlugin {
         final X17SoundSystem soundSystem = new X17SoundSystem();
         final X17TorchExtinguishSystem torchSystem = new X17TorchExtinguishSystem();
         final X17ItemStealSystem stealSystem = new X17ItemStealSystem();
-        
+
         aiSystem.setSoundSystem(soundSystem);
         aiSystem.setTorchSystem(torchSystem);
         aiSystem.setStealSystem(stealSystem);
@@ -81,7 +81,8 @@ public class X17Plugin extends JavaPlugin {
             getEntityStoreRegistry().registerSystem(aiSystem);
             getEntityStoreRegistry().registerSystem(new X17DamageSystem(aiSystem));
             getEntityStoreRegistry().registerSystem(soundSystem);
-            log(Level.INFO, "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17TorchExtinguishSystem, X17ItemStealSystem");
+            log(Level.INFO,
+                    "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17TorchExtinguishSystem, X17ItemStealSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }
