@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.2.7
+ * X17AISystem - v0.2.8
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -131,10 +131,10 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final double TORCH_CHANCE_SPAWN = 0.50;
 
     // ── Item stealing ────────────────────────────────────────────────────────
-    /** Chance to attempt item theft on ghost/silent nights. */
+    /** Chance to attempt item theft on ghost/silent nights (X17 not present). */
     private static final double STEAL_CHANCE_NORMAL = 0.08;
-    /** Chance to attempt item theft on spawn nights. */
-    private static final double STEAL_CHANCE_GHOST = 0.15;
+    /** Chance to attempt item theft on spawn nights (X17 is present and active). */
+    private static final double STEAL_CHANCE_SPAWN = 0.15;
 
     // ── Singleton guard ───────────────────────────────────────────────────────
     private static volatile int activeEntityIndex = -1;
@@ -253,7 +253,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         double torchChance = isSpawnNight ? TORCH_CHANCE_SPAWN : TORCH_CHANCE_NORMAL;
         torchEnabledThisNight = rng.nextDouble() < torchChance;
         log(Level.INFO, "[Torch] Night rolled: "
-                + (isSpawnNight ? "SPAWN" : "non-spawn")
+                + (isSpawnNight ? "spawn" : "non-spawn")
                 + " | chance=" + String.format("%.0f%%", torchChance * 100)
                 + " | enabled=" + torchEnabledThisNight);
 
@@ -264,10 +264,10 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private void resetStealNight(boolean isSpawnNight) {
         stealDoneThisNight = false;
         stealTickCounter = 0;
-        double stealChance = isSpawnNight ? STEAL_CHANCE_GHOST : STEAL_CHANCE_NORMAL;
+        double stealChance = isSpawnNight ? STEAL_CHANCE_SPAWN : STEAL_CHANCE_NORMAL;
         stealEnabledThisNight = rng.nextDouble() < stealChance;
         log(Level.INFO, "[Steal] Night rolled: "
-                + (isSpawnNight ? "SPAWN" : "non-spawn")
+                + (isSpawnNight ? "spawn" : "non-spawn")
                 + " | chance=" + String.format("%.0f%%", stealChance * 100)
                 + " | enabled=" + stealEnabledThisNight);
     }

@@ -9,7 +9,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X17AIComponent - v0.2.7
+ * X17AIComponent - v0.2.8
  *
  * Stores the state and configuration for the X17 entity, including timers,
  * night-specific directives, and movement budgets.
