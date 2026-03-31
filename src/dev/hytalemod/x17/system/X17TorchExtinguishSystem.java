@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
- * X17TorchExtinguishSystem - v0.2.7
+ * X17TorchExtinguishSystem - v0.2.8
  *
  * Extinguishes all torch-type blocks within a configurable AOE radius around a
  * given world position. Triggered by X17AISystem whenever X17 enters its first
@@ -155,7 +155,8 @@ public class X17TorchExtinguishSystem {
                             continue;
 
                         // Toggle the block to its "Off" interaction state.
-                        world.setBlockInteractionState(new com.hypixel.hytale.math.vector.Vector3i(bx, by, bz), bt, STATE_OFF);
+                        world.setBlockInteractionState(new com.hypixel.hytale.math.vector.Vector3i(bx, by, bz), bt,
+                                STATE_OFF);
                         extinguished++;
 
                     } catch (Exception e) {

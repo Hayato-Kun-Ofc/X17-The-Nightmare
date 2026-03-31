@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.2.7
+ * X17EventSystem - v0.2.8
  */
 public class X17EventSystem {
 
@@ -48,6 +48,17 @@ public class X17EventSystem {
     // Tracks which night number was last fully configured on the AI component.
     // Prevents synchronizeNightDirective from resetting the budget on every tick.
     private int lastConfiguredNightNumber = -1;
+
+    // ── Multi-store guard ─────────────────────────────────────────────────────
+    // Hytale's EntityStoreRegistry calls the TickingSystem once per active
+    // EntityStore (one per zone/world). X17 should only run its night logic on
+    // the *primary* store — the first one that actually contains players.
+    // We latch that store's identity on first encounter and ignore all others.
+    //
+    // Identity key: System.identityHashCode(store) is sufficient because store
+    // instances are long-lived singletons managed by the engine.
+    private int primaryStoreHash = 0;
+    private boolean primaryStoreLocked = false;
 
     public X17EventSystem(X17Plugin plugin, X17AISystem aiSystem,
             X17NightScheduler scheduler, X17SoundSystem soundSystem) {
@@ -87,12 +98,34 @@ public class X17EventSystem {
             return;
         }
 
+        // ── Primary store guard ───────────────────────────────────────────────
+        // Hytale calls this TickingSystem once per active EntityStore (one per
+        // zone/world). We must only run night logic on a single store — the one
+        // that actually contains players. Lock onto the first store with players;
+        // fall back to the very first store seen if the server is empty on boot.
+        int storeHash = System.identityHashCode(store);
+        if (!primaryStoreLocked) {
+            boolean hasPlayers = hasAnyPlayer(store);
+            if (hasPlayers || primaryStoreHash == 0) {
+                primaryStoreHash = storeHash;
+                if (hasPlayers) {
+                    primaryStoreLocked = true;
+                }
+            }
+        }
+        if (storeHash != primaryStoreHash) {
+            return; // secondary store — skip all night logic
+        }
+
         boolean isNight = checkIsNight(store);
         String worldName = resolveWorldName(store);
 
+        // scheduler.tick MUST come first so currentDecision is already resolved
+        // (SPAWN / GHOST_SOUNDS / SILENT) before applyNightDecision reads it.
         scheduler.tick(isNight, worldName);
 
-        // Night transition
+        // Night transition — runs exactly once per night thanks to lastKnownNight
+        // AND because secondary stores are rejected above.
         if (isNight && !lastKnownNight) {
             prepareNightDirective();
             applyNightDecision(store);
@@ -322,6 +355,23 @@ public class X17EventSystem {
 
         ai.setCurrentState(X17AIComponent.X17State.TRUE_VANISH);
         ai.setVanishTimerTicks(1);
+    }
+
+    /**
+     * Returns true if the given store has at least one player present.
+     * Used by the primary-store guard to prefer a populated store.
+     */
+    @SuppressWarnings("deprecation")
+    private boolean hasAnyPlayer(Store<EntityStore> store) {
+        try {
+            EntityStore es = (EntityStore) store.getExternalData();
+            if (es == null || es.getWorld() == null)
+                return false;
+            var players = es.getWorld().getPlayers();
+            return players != null && !players.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean checkIsNight(Store<EntityStore> store) {
