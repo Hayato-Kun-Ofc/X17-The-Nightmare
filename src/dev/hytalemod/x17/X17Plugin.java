@@ -27,7 +27,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.2.8
+ * X17Plugin - v0.2.9
  */
 public class X17Plugin extends JavaPlugin {
 
