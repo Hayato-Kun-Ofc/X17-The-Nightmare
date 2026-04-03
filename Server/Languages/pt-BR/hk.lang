@@ -10,7 +10,7 @@ items.Deco_X_17_Trophy.name=Cabeça do X-17
 items.Deco_X_17_Trophy.description=Um troféu macabro da entidade de pesadelo que espreita no nevoeiro, sua energia ainda é sentida.
 
 customUI.Pages.X17WelcomePage.title=Bem-vindo ao Pesadelo
-customUI.Pages.X17WelcomePage.subtitle=X-17 O Pesadelo — v0.2.4
+customUI.Pages.X17WelcomePage.subtitle=X-17 O Pesadelo — v0.2.9
 customUI.Pages.X17WelcomePage.body=Sobrevive a este mundo como sempre fizeste.\nConstrói o teu abrigo. Reúne os teus recursos. Acende as tuas fogueiras.\n \nMas fica avisado — as noites e as cavernas nunca mais serão as mesmas.\nAlgo espreita na névoa. Algo que observa.\n \nEstás a ser observado.
 customUI.Pages.X17WelcomePage.tipTitle=Dicas de Sobrevivência
 customUI.Pages.X17WelcomePage.tip1= > Constrói paredes e tecto, portas e janelas podem ser o teu único aviso.

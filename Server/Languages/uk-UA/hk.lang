@@ -10,7 +10,7 @@ items.Deco_X_17_Trophy.name=Голова X-17
 items.Deco_X_17_Trophy.description=Жахливий трофей кошмарної сутності, яка переслідує в тумані, її енергія все ще відчутна.
 
 customUI.Pages.X17WelcomePage.title=Ласкаво просимо в Кошмар
-customUI.Pages.X17WelcomePage.subtitle=X-17 Кошмар — v0.2.6
+customUI.Pages.X17WelcomePage.subtitle=X-17 Кошмар — v0.2.9
 customUI.Pages.X17WelcomePage.body=Виживайте в цьому світі, як і завжди.\nБудуйте своє укриття. Збирайте ресурси. Розпалюйте вогнища.\n \nАле будьте обережні — ночі та печери ніколи вже не будуть колишніми.\nЩось ховається в тумані. Щось, що спостерігає.\n \nЗа вами спостерігають.
 customUI.Pages.X17WelcomePage.tipTitle=Поради для виживання
 customUI.Pages.X17WelcomePage.tip1= > Будуйте стіни та дах, двері та вікна можуть стати вашим єдиним попередженням.

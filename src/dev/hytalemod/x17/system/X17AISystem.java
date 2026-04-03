@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.2.8
+ * X17AISystem - v0.2.9
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -279,7 +279,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         stealTickCounter++;
         if (stealTickCounter >= 400) {
             stealTickCounter = 0;
-            TargetData target = selectNearestPlayer(world, store);
+            TargetData target = selectNearestPlayer(world, store, null);
             if (target != null) {
                 boolean stolen = stealSystem.attemptTheft(world, target.transform.getPosition());
                 if (stolen) {
@@ -305,7 +305,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         if (torchTickCounter >= 100) {
             torchesExtinguishedThisNight = true;
             if (torchEnabledThisNight && torchSystem != null) {
-                TargetData target = selectNearestPlayer(world, store);
+                TargetData target = selectNearestPlayer(world, store, null);
                 if (target != null && target.transform != null) {
                     log(Level.INFO, "[Torch] Ambient lights out! (Ghost/Initial)");
                     torchSystem.extinguishTorchesAround(world, target.transform.getPosition());
@@ -369,7 +369,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             }
 
             // ── No players online ─────────────────────────────────────────────
-            TargetData target = selectNearestPlayer(world, store);
+            TargetData target = selectNearestPlayer(world, store, x17tf.getPosition());
             if (target == null) {
                 if (ai.getCurrentState() != X17State.DORMANT)
                     forceDormant(ai, x17tf, 80);
@@ -399,8 +399,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                     tickRageChase(ai, x17tf, target);
                     break;
                 case TRUE_VANISH:
-                    ai.setCurrentState(X17State.DORMANT);
-                    enterStalk(ai, x17tf, world, target);
+                    tickTrueVanish(ai);
                     break;
                 case RETREAT:
                     ai.setCurrentState(X17State.DORMANT);
@@ -631,6 +630,20 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
+        // Look exposure during hunt: if seen, abort hunt and vanish/reposition!
+        if (isPlayerWatchingX17(target.transform, x17tf)) {
+            ai.incrementLookExposureTicks();
+            if (ai.getLookExposureTicks() >= p_lookLimit) {
+                log(Level.INFO, "[AI] Spotted during hunt! Retreating gaze. [" + personality + "]");
+                ai.setLookExposureTicks(0);
+                beginReposition(ai, x17tf, null, target, true);
+                return;
+            }
+        } else {
+            int decay = (personality == NightPersonality.BOLD) ? 1 : 2;
+            ai.setLookExposureTicks(Math.max(0, ai.getLookExposureTicks() - decay));
+        }
+
         double speed = (dist <= HUNT_CLOSE_THRESHOLD) ? HUNT_SPEED_CLOSE : HUNT_SPEED_CREEP;
         faceTarget(x17tf, target.transform.getPosition());
         moveTowards(x17tf, target.transform.getPosition(), speed);
@@ -780,12 +793,13 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         ai.decrementRepositionCooldown();
         ai.decrementHuntCommitment();
         ai.decrementAppearanceHold();
+        ai.decrementAmbushScareCooldown();
 
         X17State state = ai.getCurrentState();
         if (state != X17State.DORMANT && state != X17State.TRUE_VANISH && state != X17State.RETREAT) {
             ai.decrementNightPresenceBudget();
         }
-        if (state != X17State.STALK) {
+        if (state != X17State.STALK && state != X17State.HUNT_APPROACH) {
             ai.setLookExposureTicks(0);
         }
     }
@@ -970,17 +984,33 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     @SuppressWarnings("deprecation")
-    private TargetData selectNearestPlayer(World world, Store<EntityStore> store) {
+    private TargetData selectNearestPlayer(World world, Store<EntityStore> store, Vector3d referencePos) {
         if (world.getPlayers() == null)
             return null;
+
+        TargetData nearest = null;
+        double minDistance = Double.MAX_VALUE;
+
         for (Player p : world.getPlayers()) {
             if (p == null || p.getReference() == null)
                 continue;
             TransformComponent tf = store.getComponent(p.getReference(), TransformComponent.getComponentType());
-            if (tf != null)
-                return new TargetData(p, tf, 0.0);
+            if (tf != null) {
+                if (referencePos == null) {
+                    return new TargetData(p, tf, 0.0);
+                }
+                double dx = tf.getPosition().getX() - referencePos.getX();
+                double dy = tf.getPosition().getY() - referencePos.getY();
+                double dz = tf.getPosition().getZ() - referencePos.getZ();
+                double distSq = dx * dx + dy * dy + dz * dz;
+
+                if (distSq < minDistance) {
+                    minDistance = distSq;
+                    nearest = new TargetData(p, tf, Math.sqrt(distSq));
+                }
+            }
         }
-        return null;
+        return nearest;
     }
 
     private void rememberTarget(X17AIComponent ai, TransformComponent playerTf) {

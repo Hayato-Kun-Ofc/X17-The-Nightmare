@@ -10,7 +10,7 @@ items.Deco_X_17_Trophy.name=Голова X-17
 items.Deco_X_17_Trophy.description=Жуткий трофей кошмарной сущности, скрывающейся в тумане.
 
 customUI.Pages.X17WelcomePage.title=Добро пожаловать в кошмар
-customUI.Pages.X17WelcomePage.subtitle=X-17 Кошмар — v0.2.4
+customUI.Pages.X17WelcomePage.subtitle=X-17 Кошмар — v0.2.9
 customUI.Pages.X17WelcomePage.body=Выживай в этом мире, как всегда.\nСтрой укрытие. Собирай ресурсы. Зажигай огни.\n \nНо будь осторожен — ночи и пещеры больше не будут прежними.\nЧто-то таится в тумане. Что-то наблюдает.\n \nЗа тобой следят.
 customUI.Pages.X17WelcomePage.tipTitle=Советы по выживанию
 customUI.Pages.X17WelcomePage.tip1= > Строй стены и крышу, двери и окна могут быть единственным предупреждением.

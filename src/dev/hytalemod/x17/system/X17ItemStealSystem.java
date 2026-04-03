@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 /**
- * X17ItemStealSystem - v0.2.8
+ * X17ItemStealSystem - v0.2.9
  *
  * Silently removes one priority item from a nearby chest.
  * No drops, no visual feedback, no intermediary — the item simply vanishes.
