@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.2.9
+ * X17EventSystem - v0.3.0
  */
 public class X17EventSystem {
 

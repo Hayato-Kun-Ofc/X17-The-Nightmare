@@ -19,6 +19,8 @@ import dev.hytalemod.x17.system.X17EventSystem;
 import dev.hytalemod.x17.system.X17SoundSystem;
 import dev.hytalemod.x17.system.X17TorchExtinguishSystem;
 import dev.hytalemod.x17.system.X17ItemStealSystem;
+import dev.hytalemod.x17.system.X17ShadowsSystem;
+import dev.hytalemod.x17.system.X17ShinyTrapSystem;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -27,7 +29,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.2.8
+ * X17Plugin - v0.3.0
  */
 public class X17Plugin extends JavaPlugin {
 
@@ -50,7 +52,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.2.9 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.0 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
@@ -70,10 +72,14 @@ public class X17Plugin extends JavaPlugin {
         final X17SoundSystem soundSystem = new X17SoundSystem();
         final X17TorchExtinguishSystem torchSystem = new X17TorchExtinguishSystem();
         final X17ItemStealSystem stealSystem = new X17ItemStealSystem();
+        final X17ShadowsSystem shadowsSystem = new X17ShadowsSystem();
+        final X17ShinyTrapSystem shinyTrapSystem = new X17ShinyTrapSystem();
 
         aiSystem.setSoundSystem(soundSystem);
         aiSystem.setTorchSystem(torchSystem);
         aiSystem.setStealSystem(stealSystem);
+        aiSystem.setShadowsSystem(shadowsSystem);
+        aiSystem.setShinyTrapSystem(shinyTrapSystem);
         aiSystem.setScheduler(scheduler);
         soundSystem.setScheduler(scheduler);
 
@@ -81,8 +87,10 @@ public class X17Plugin extends JavaPlugin {
             getEntityStoreRegistry().registerSystem(aiSystem);
             getEntityStoreRegistry().registerSystem(new X17DamageSystem(aiSystem));
             getEntityStoreRegistry().registerSystem(soundSystem);
+            getEntityStoreRegistry().registerSystem(shadowsSystem);
+            getEntityStoreRegistry().registerSystem(shinyTrapSystem);
             log(Level.INFO,
-                    "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17TorchExtinguishSystem, X17ItemStealSystem");
+                    "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17TorchExtinguishSystem, X17ItemStealSystem, X17ShadowsSystem, X17ShinyTrapSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }
@@ -142,7 +150,7 @@ public class X17Plugin extends JavaPlugin {
         }
 
         log(Level.INFO, "=== All systems online. X-17 is watching. ===");
-        log(Level.INFO, "    N1:30%  N2:50%  N3:65%  N4:75%  N5+:80%");
+        log(Level.INFO, "    N1:30%  N2:45%  N3:55%  N4:60%  N5+:65%");
     }
 
     @Override

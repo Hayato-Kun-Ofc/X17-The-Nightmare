@@ -42,6 +42,8 @@ The mod is written in Java utilizing the Hytale ECS (Entity Component System) an
   - `X17SoundSystem`: Controls dynamic, spatial audio cues.
   - `X17TorchExtinguishSystem`: Logic for scanning and extinguishing light sources in a radius.
   - `X17ItemStealSystem`: Implements the silent theft of priority items from player chests.
+  - `X17ShadowsSystem`: Spawns fleeting paranormal shadow replicas on Ghost Nights to induce paranoia.
+  - `X17ShinyTrapSystem`: Creates deceptive item decoys in the wild that lure players into ambushes.
 - **`scheduler/`**: Contains the `X17NightScheduler`, responsible for randomizing nights and writing outcomes to local `.properties` files.
 - **`ui/`**: Contains Java code rendering the `X17WelcomePage` UI.
 

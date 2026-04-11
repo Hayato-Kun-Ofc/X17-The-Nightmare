@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.2.9
+ * X17AISystem - v0.3.0
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -35,8 +35,8 @@ import java.util.logging.Level;
  * 2. Unpredictability via weighted randomness — same situation never plays out
  * twice.
  * 3. HUNT_APPROACH is a slow, creeping advance. Not a charge.
- * 4. CHASE (RAGE) triggers ONLY via player-initiated damage, never
- * spontaneously.
+ * 4. CHASE (RAGE) triggers via events, damage, or based on night personality.
+ * 
  * 5. Night personality (CAUTIOUS / BOLD / ERRATIC) is rolled once per night and
  * biases every decision throughout that night.
  *
@@ -106,7 +106,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final double BASE_ABORT_HUNT_CHANCE = 0.15;
 
     // ── AMBUSH_SCARE ──────────────────────────────────────────────────────────
-    private static final int AMBUSH_FREEZE_TICKS = 22;
+    private static final int AMBUSH_FREEZE_TICKS = 60; // 3 seconds — player sees X17 in their face
     private static final int POST_SCARE_VANISH_MIN = 1200;
     private static final int POST_SCARE_VANISH_MAX = 2400;
 
@@ -120,6 +120,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final int END_NIGHT_VANISH_MAX = 2400;
     private static final int WAITING_RANGE_MIN = 16;
     private static final int WAITING_RANGE_MAX = 24;
+    /** Y coordinate used to hide X17 underground when vanishing (same pattern as ShadowsSystem). */
+    private static final double POOL_HIDE_Y = -200.0;
 
     // ── RETREAT ───────────────────────────────────────────────────────────────
     private static final int RETREAT_COOLDOWN_TICKS = 2400;
@@ -165,6 +167,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private X17SoundSystem soundSystem = null;
     private X17TorchExtinguishSystem torchSystem = null;
     private X17ItemStealSystem stealSystem = null;
+    private X17ShadowsSystem shadowsSystem = null;
+    private X17ShinyTrapSystem shinyTrapSystem = null;
 
     // =========================================================================
     // WIRING
@@ -180,6 +184,14 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     public void setStealSystem(X17ItemStealSystem stealSystem) {
         this.stealSystem = stealSystem;
+    }
+
+    public void setShadowsSystem(X17ShadowsSystem shadowsSystem) {
+        this.shadowsSystem = shadowsSystem;
+    }
+
+    public void setShinyTrapSystem(X17ShinyTrapSystem shinyTrapSystem) {
+        this.shinyTrapSystem = shinyTrapSystem;
     }
 
     public void setScheduler(X17NightScheduler scheduler) {
@@ -259,6 +271,16 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
         // Also reset item stealing for the night
         resetStealNight(isSpawnNight);
+
+        // Also reset shadow event for the night
+        if (shadowsSystem != null) {
+            shadowsSystem.resetShadowNight(isSpawnNight);
+        }
+
+        // Also reset shiny trap event for the night
+        if (shinyTrapSystem != null) {
+            shinyTrapSystem.resetShinyTrapNight(isSpawnNight);
+        }
     }
 
     private void resetStealNight(boolean isSpawnNight) {
@@ -655,18 +677,28 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     private void enterAmbushScare(X17AIComponent ai, TransformComponent x17tf,
             TransformComponent playerTf) {
-        faceTarget(x17tf, playerTf.getPosition());
+        // Teleport right in front of the player, facing them
+        Vector3d pPos = playerTf.getPosition();
+        double pYaw = playerTf.getRotation().getYaw();
+        // Place X17 ~2.5 blocks directly in front of player's face
+        Vector3d scarePos = new Vector3d(
+                pPos.getX() + Math.sin(pYaw) * 2.5,
+                pPos.getY(),
+                pPos.getZ() + Math.cos(pYaw) * 2.5);
+        x17tf.teleportPosition(scarePos);
+        faceTarget(x17tf, pPos);
         ai.setCurrentState(X17State.AMBUSH_SCARE);
         ai.setAppearanceHoldTicks(AMBUSH_FREEZE_TICKS);
         ai.setActionCooldownTicks(AMBUSH_FREEZE_TICKS);
         ai.setHuntCommitmentTicks(0);
         if (soundSystem != null)
             soundSystem.notifyAmbushScare(x17tf.getPosition());
-        log(Level.INFO, "[AI] *** AMBUSH SCARE ***");
+        log(Level.INFO, "[AI] *** AMBUSH SCARE *** pos=" + formatPos(scarePos));
     }
 
     private void tickAmbushScare(X17AIComponent ai, TransformComponent x17tf, TargetData target) {
         if (ai.getActionCooldownTicks() > 0) {
+            // Freeze in place — only rotate to face player, NO movement
             faceTarget(x17tf, target.transform.getPosition());
             return;
         }
@@ -740,11 +772,14 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         ai.setLookExposureTicks(0);
         ai.setAppearanceHoldTicks(0);
         ai.setActionCooldownTicks(0);
-        teleportToWaitingPoint(x17tf,
-                new Vector3d(ai.getLastKnownPlayerX(), ai.getLastKnownPlayerY(), ai.getLastKnownPlayerZ()));
+        // Instant visual disappearance — teleport underground, invisible to player
+        // Uses same pooling pattern as ShadowsSystem (entity persists for reuse)
+        Vector3d lastKnown = new Vector3d(
+                ai.getLastKnownPlayerX(), ai.getLastKnownPlayerY(), ai.getLastKnownPlayerZ());
+        x17tf.teleportPosition(new Vector3d(lastKnown.getX(), POOL_HIDE_Y, lastKnown.getZ()));
         if (soundSystem != null)
             soundSystem.notifyRageDeactivated();
-        log(Level.INFO, "[AI] TRUE_VANISH cooldown=" + spawnCooldownTicks + "t.");
+        log(Level.INFO, "[AI] TRUE_VANISH (void) cooldown=" + spawnCooldownTicks + "t.");
     }
 
     private void tickTrueVanish(X17AIComponent ai) {
@@ -758,7 +793,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         double angle = rng.nextDouble() * Math.PI * 2.0;
         x17tf.teleportPosition(new Vector3d(
                 awayFrom.getX() + Math.cos(angle) * 60.0,
-                awayFrom.getY(),
+                POOL_HIDE_Y,
                 awayFrom.getZ() + Math.sin(angle) * 60.0));
         ai.setCurrentState(X17State.RETREAT);
         ai.setSpawnCooldownTicks(RETREAT_COOLDOWN_TICKS);
