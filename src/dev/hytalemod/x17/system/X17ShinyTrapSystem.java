@@ -128,9 +128,10 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
 
     // ── Observing ─────────────────────────────────────────────────────────────
     /**
-     * How long X17 stands and watches before vanishing on its own (ticks, 10 s).
+     * How long X17 stands and watches before vanishing on its own (200 ticks, 10
+     * s).
      */
-    private static final int WATCH_TICKS = 200; // 10 s at 20 tps
+    private static final int WATCH_TICKS = 200; // 10 s
 
     // ── Startup delay ─────────────────────────────────────────────────────────
     /**
@@ -698,7 +699,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
     }
 
     /**
-     * Sends an entity to Y = –500 (effectively despawns it without a death event).
+     * Sends an entity to Y = –200 (effectively despawns it without a death event).
      */
     private void sendToVoid(Store<EntityStore> store, Ref<EntityStore> ref) {
         if (ref == null || !ref.isValid())

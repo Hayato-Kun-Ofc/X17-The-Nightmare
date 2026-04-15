@@ -39,8 +39,8 @@ import java.util.logging.Level;
  * The Hytale ECS Store API does not expose a destroyEntity method.
  * Shadow entities are managed with a POOLING strategy:
  * 1. On first trigger: spawn SHADOW_COUNT fresh entities via NPCPlugin.
- * 2. To "despawn": teleport to Y=-500 (underground, invisible to player).
- * 3. On next trigger: REUSE existing refs if valid (teleport from -500 to
+ * 2. To "despawn": teleport to Y=-200 (underground, invisible to player).
+ * 3. On next trigger: REUSE existing refs if valid (teleport from -200 to
  * new positions). Only spawn new entities if refs became invalid.
  * This ensures zero entity accumulation across nights.
  *
@@ -50,8 +50,8 @@ import java.util.logging.Level;
  * start of every night. The roll happens once; if true, the event is
  * activated after a delay.
  *
- * CURRENT STATE: Chance set to 100% for testing. Change SHADOW_CHANCE
- * to 0.10 (10%) for production.
+ * Note: Chance set to 100% for testing. Change SHADOW_CHANCE
+ * to 0.35 (35%) for production.
  */
 public class X17ShadowsSystem extends TickingSystem<EntityStore> {
 
@@ -106,7 +106,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
      * Entity pool — persists across nights. Refs are reused to avoid
      * accumulating entities. Only populated the first time shadows spawn.
      * Each entry tracks the entity ref, its pool slot index, and whether
-     * it is currently "visible" (active in the world) or "hidden" (at Y=-500).
+     * it is currently "visible" (active in the world) or "hidden" (at Y=-200).
      */
     private final List<ShadowEntry> entityPool = new ArrayList<>();
 
