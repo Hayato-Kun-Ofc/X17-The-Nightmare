@@ -23,7 +23,10 @@ import dev.hytalemod.x17.ui.X17WelcomePage;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -63,7 +66,18 @@ public class X17EventSystem {
     // ── World restriction ─────────────────────────────────────────────────────
     // X-17 only operates in the main overworld. All instances, dungeons,
     // creative hubs, and alternate worlds are completely ignored.
-    private static final String ALLOWED_WORLD_NAME = "Default";
+    // Supports multiple naming conventions used by different server providers:
+    //   - "default"       → standalone Hytale / local saves
+    //   - "default_world"  → some server configurations
+    //   - "world"          → Bisect Hosting and similar providers
+    private static final Set<String> ALLOWED_WORLD_NAMES = new HashSet<>(Arrays.asList(
+            "default", "default_world", "world"
+    ));
+
+    private static boolean isAllowedWorld(String worldName) {
+        if (worldName == null) return false;
+        return ALLOWED_WORLD_NAMES.contains(worldName.toLowerCase());
+    }
 
     public X17EventSystem(X17Plugin plugin, X17AISystem aiSystem,
             X17NightScheduler scheduler, X17SoundSystem soundSystem) {
@@ -104,10 +118,10 @@ public class X17EventSystem {
         }
 
         // ── World restriction guard ───────────────────────────────────────────
-        // Only allow X-17 logic in the main overworld ('Default').
+        // Only allow X-17 logic in the main overworld.
         // Instances, dungeons, creative hubs, etc. are completely skipped.
         String worldName = resolveWorldName(store);
-        if (!ALLOWED_WORLD_NAME.equalsIgnoreCase(worldName)) {
+        if (!isAllowedWorld(worldName)) {
             return;
         }
 
@@ -313,9 +327,9 @@ public class X17EventSystem {
             UUID uuid = playerRef.getUuid();
             String worldName = resolveWorldName(store);
 
-            // Only show welcome screen in the Default world
-            if (!ALLOWED_WORLD_NAME.equalsIgnoreCase(worldName)) {
-                plugin.log(Level.INFO, "Skipping welcome UI for " + uuid + " — world '" + worldName + "' is not Default.");
+            // Only show welcome screen in the main overworld
+            if (!isAllowedWorld(worldName)) {
+                plugin.log(Level.INFO, "Skipping welcome UI for " + uuid + " — world '" + worldName + "' is not a main world.");
                 return;
             }
 
