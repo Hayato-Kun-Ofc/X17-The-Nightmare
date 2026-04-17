@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.3.0
+ * X17EventSystem - v0.3.1
  */
 public class X17EventSystem {
 
@@ -59,6 +59,11 @@ public class X17EventSystem {
     // instances are long-lived singletons managed by the engine.
     private int primaryStoreHash = 0;
     private boolean primaryStoreLocked = false;
+
+    // ── World restriction ─────────────────────────────────────────────────────
+    // X-17 only operates in the main overworld. All instances, dungeons,
+    // creative hubs, and alternate worlds are completely ignored.
+    private static final String ALLOWED_WORLD_NAME = "Default";
 
     public X17EventSystem(X17Plugin plugin, X17AISystem aiSystem,
             X17NightScheduler scheduler, X17SoundSystem soundSystem) {
@@ -98,6 +103,14 @@ public class X17EventSystem {
             return;
         }
 
+        // ── World restriction guard ───────────────────────────────────────────
+        // Only allow X-17 logic in the main overworld ('Default').
+        // Instances, dungeons, creative hubs, etc. are completely skipped.
+        String worldName = resolveWorldName(store);
+        if (!ALLOWED_WORLD_NAME.equalsIgnoreCase(worldName)) {
+            return;
+        }
+
         // ── Primary store guard ───────────────────────────────────────────────
         // Hytale calls this TickingSystem once per active EntityStore (one per
         // zone/world). We must only run night logic on a single store — the one
@@ -118,7 +131,6 @@ public class X17EventSystem {
         }
 
         boolean isNight = checkIsNight(store);
-        String worldName = resolveWorldName(store);
 
         // scheduler.tick MUST come first so currentDecision is already resolved
         // (SPAWN / GHOST_SOUNDS / SILENT) before applyNightDecision reads it.
@@ -300,6 +312,12 @@ public class X17EventSystem {
             Store<EntityStore> store = event.getPlayerRef().getStore();
             UUID uuid = playerRef.getUuid();
             String worldName = resolveWorldName(store);
+
+            // Only show welcome screen in the Default world
+            if (!ALLOWED_WORLD_NAME.equalsIgnoreCase(worldName)) {
+                plugin.log(Level.INFO, "Skipping welcome UI for " + uuid + " — world '" + worldName + "' is not Default.");
+                return;
+            }
 
             X17PlayerComponent playerComp = store.getComponent(
                     playerRef.getReference(), X17PlayerComponent.getComponentType());
