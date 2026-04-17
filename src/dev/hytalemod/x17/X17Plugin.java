@@ -52,7 +52,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.0 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.1 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
