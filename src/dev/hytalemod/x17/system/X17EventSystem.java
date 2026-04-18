@@ -67,15 +67,15 @@ public class X17EventSystem {
     // X-17 only operates in the main overworld. All instances, dungeons,
     // creative hubs, and alternate worlds are completely ignored.
     // Supports multiple naming conventions used by different server providers:
-    //   - "default"       → standalone Hytale / local saves
-    //   - "default_world"  → some server configurations
-    //   - "world"          → Bisect Hosting and similar providers
+    // - "default" → standalone Hytale / local saves
+    // - "default_world" → some server configurations
+    // - "world" → Bisect Hosting and similar providers
     private static final Set<String> ALLOWED_WORLD_NAMES = new HashSet<>(Arrays.asList(
-            "default", "default_world", "world"
-    ));
+            "default", "default_world", "world"));
 
     private static boolean isAllowedWorld(String worldName) {
-        if (worldName == null) return false;
+        if (worldName == null)
+            return false;
         return ALLOWED_WORLD_NAMES.contains(worldName.toLowerCase());
     }
 
@@ -329,7 +329,8 @@ public class X17EventSystem {
 
             // Only show welcome screen in the main overworld
             if (!isAllowedWorld(worldName)) {
-                plugin.log(Level.INFO, "Skipping welcome UI for " + uuid + " — world '" + worldName + "' is not a main world.");
+                plugin.log(Level.INFO,
+                        "Skipping welcome UI for " + uuid + " — world '" + worldName + "' is not a main world.");
                 return;
             }
 

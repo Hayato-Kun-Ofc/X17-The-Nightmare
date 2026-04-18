@@ -120,7 +120,10 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final int END_NIGHT_VANISH_MAX = 2400;
     private static final int WAITING_RANGE_MIN = 16;
     private static final int WAITING_RANGE_MAX = 24;
-    /** Y coordinate used to hide X17 underground when vanishing (same pattern as ShadowsSystem). */
+    /**
+     * Y coordinate used to hide X17 underground when vanishing (same pattern as
+     * ShadowsSystem).
+     */
     private static final double POOL_HIDE_Y = -200.0;
 
     // ── RETREAT ───────────────────────────────────────────────────────────────
