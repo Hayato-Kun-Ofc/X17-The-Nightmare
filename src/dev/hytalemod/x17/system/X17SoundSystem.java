@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -22,7 +23,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.3.1
+ * X17SoundSystem - v0.3.2
  *
  * Sound pacing is synchronized with scheduler decisions:
  * spawn nights get deceptive local sounds, ghost nights get rarer remote
@@ -109,7 +110,7 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private volatile boolean scareSoundPending = false;
     private volatile Vector3d scareSoundPosition = null;
 
-    private static final String SND_AMBUSH_SCARE = "SFX_X_17_Scare";
+    private static final String SND_AMBUSH_SCARE = "SFX_X_17_Jumpscare";
 
     public void setScheduler(X17NightScheduler scheduler) {
         this.scheduler = scheduler;
@@ -180,7 +181,7 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
             }
 
             World world = entityStore.getWorld();
-            Player player = findAnyPlayer(world);
+            Player player = findAnyPlayer(world, store);
             if (player == null) {
                 return;
             }
@@ -335,20 +336,23 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private boolean isNight(Store<EntityStore> store) {
         try {
             return store.getResource(WorldTimeResource.getResourceType())
-                    .isDayTimeWithinRange(0.75, 0.25);
+                    .isDayTimeWithinRange(0.792, 0.208); // FIX v0.3.2: now matches EventSystem (was 0.75/0.25)
         } catch (Exception e) {
             return true;
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private Player findAnyPlayer(World world) {
-        if (world.getPlayers() == null) {
+    private Player findAnyPlayer(World world, Store<EntityStore> store) {
+        if (world.getPlayerRefs() == null) {
             return null;
         }
 
-        for (Player player : world.getPlayers()) {
-            if (player != null && player.getReference() != null) {
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+            if (playerRef == null || playerRef.getReference() == null) {
+                continue;
+            }
+            Player player = store.getComponent(playerRef.getReference(), Player.getComponentType());
+            if (player != null) {
                 return player;
             }
         }

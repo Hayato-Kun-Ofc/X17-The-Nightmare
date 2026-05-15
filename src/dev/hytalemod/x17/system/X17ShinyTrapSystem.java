@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -23,7 +24,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem — v0.3.1
+ * X17ShinyTrapSystem — v0.3.2
  *
  * ── GHOST NIGHT DECOY AMBUSH
  * ──────────────────────────────────────────────────
@@ -110,7 +111,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
     private static final double LEAD_DIST = 6.0;
 
     /** Movement speed toward destination (blocks/tick, ~20 tps → 0.4 b/s). */
-    private static final double DECOY_SPEED = 0.02 * 20; // ≈ 0.4 blocks/tick
+    private static final double DECOY_SPEED = 0.02; // FIX v0.3.2: was 0.02*20=0.4 b/tick (8 b/s); correct is 0.02 b/tick = 0.4 b/s
 
     /** Arrival threshold — decoy is "at destination" when this close (sq). */
     private static final double ARRIVE_DIST_SQ = 1.5 * 1.5;
@@ -270,7 +271,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
             return;
 
         // Pick victim — any player in the world
-        Player victim = findAnyPlayer(world);
+        Player victim = findAnyPlayer(world, store);
         if (victim == null)
             return;
         victimRef = victim.getReference();
@@ -414,7 +415,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
             return;
 
         // Check every player
-        for (Player p : getAllPlayers(world)) {
+        for (Player p : getAllPlayers(world, store)) {
             if (p == null || p.getReference() == null)
                 continue;
             TransformComponent pTf = store.getComponent(p.getReference(), TransformComponent.getComponentType());
@@ -455,7 +456,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         if (vTf == null)
             return;
 
-        List<Player> allPlayers = getAllPlayers(world);
+        List<Player> allPlayers = getAllPlayers(world, store);
         List<TransformComponent> allTfs = new ArrayList<>();
         for (Player p : allPlayers) {
             if (p != null && p.getReference() != null) {
@@ -553,7 +554,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         }
 
         // Check if ANY player has X17 in their FOV
-        for (Player p : getAllPlayers(world)) {
+        for (Player p : getAllPlayers(world, store)) {
             if (p == null || p.getReference() == null)
                 continue;
             TransformComponent pTf = store.getComponent(p.getReference(), TransformComponent.getComponentType());
@@ -829,27 +830,31 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private Player findAnyPlayer(World world) {
-        if (world.getPlayers() == null)
+    private Player findAnyPlayer(World world, Store<EntityStore> store) {
+        if (world.getPlayerRefs() == null)
             return null;
-        for (Player p : world.getPlayers()) {
-            if (p != null && p.getReference() != null)
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+            if (playerRef == null || playerRef.getReference() == null)
+                continue;
+            Player p = store.getComponent(playerRef.getReference(), Player.getComponentType());
+            if (p != null)
                 return p;
         }
         return null;
     }
 
-    @SuppressWarnings("deprecation")
     private Player findNearestPlayerTo(World world, Store<EntityStore> store, Vector3d pos) {
         Player nearest = null;
         double nearestSq = Double.MAX_VALUE;
-        if (world.getPlayers() == null)
+        if (world.getPlayerRefs() == null)
             return null;
-        for (Player p : world.getPlayers()) {
-            if (p == null || p.getReference() == null)
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+            if (playerRef == null || playerRef.getReference() == null)
                 continue;
-            TransformComponent tf = store.getComponent(p.getReference(), TransformComponent.getComponentType());
+            Player p = store.getComponent(playerRef.getReference(), Player.getComponentType());
+            if (p == null)
+                continue;
+            TransformComponent tf = store.getComponent(playerRef.getReference(), TransformComponent.getComponentType());
             if (tf == null)
                 continue;
             double dx = tf.getPosition().getX() - pos.getX();
@@ -863,11 +868,13 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         return nearest;
     }
 
-    @SuppressWarnings("deprecation")
-    private List<Player> getAllPlayers(World world) {
+    private List<Player> getAllPlayers(World world, Store<EntityStore> store) {
         List<Player> list = new ArrayList<>();
-        if (world.getPlayers() != null) {
-            for (Player p : world.getPlayers()) {
+        if (world.getPlayerRefs() != null) {
+            for (PlayerRef playerRef : world.getPlayerRefs()) {
+                if (playerRef == null || playerRef.getReference() == null)
+                    continue;
+                Player p = store.getComponent(playerRef.getReference(), Player.getComponentType());
                 if (p != null)
                     list.add(p);
             }

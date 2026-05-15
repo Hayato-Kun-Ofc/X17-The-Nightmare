@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
@@ -20,7 +21,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShadowsSystem - v0.3.1
+ * X17ShadowsSystem - v0.3.2
  *
  * Rare paranormal event for ghost/silent nights (when X17 is NOT actively
  * spawned).
@@ -181,7 +182,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 }
 
                 // Time to activate shadows
-                Player targetPlayer = findAnyPlayer(world);
+                Player targetPlayer = findAnyPlayer(world, store);
                 if (targetPlayer == null || targetPlayer.getReference() == null) {
                     return;
                 }
@@ -201,7 +202,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
             // ── Phase 2: Shadows are active — tick every frame ────────────────
             shadowLifetimeCounter++;
 
-            Player targetPlayer = findAnyPlayer(world);
+            Player targetPlayer = findAnyPlayer(world, store);
             if (targetPlayer == null || targetPlayer.getReference() == null) {
                 hideAllShadows(store, "no player found");
                 return;
@@ -580,13 +581,16 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private Player findAnyPlayer(World world) {
-        if (world.getPlayers() == null) {
+    private Player findAnyPlayer(World world, Store<EntityStore> store) {
+        if (world.getPlayerRefs() == null) {
             return null;
         }
-        for (Player player : world.getPlayers()) {
-            if (player != null && player.getReference() != null) {
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+            if (playerRef == null || playerRef.getReference() == null) {
+                continue;
+            }
+            Player player = store.getComponent(playerRef.getReference(), Player.getComponentType());
+            if (player != null) {
                 return player;
             }
         }

@@ -29,7 +29,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.3.1
+ * X17Plugin - v0.3.2
  */
 public class X17Plugin extends JavaPlugin {
 
@@ -52,7 +52,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.1 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.2 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
@@ -89,8 +89,10 @@ public class X17Plugin extends JavaPlugin {
             getEntityStoreRegistry().registerSystem(soundSystem);
             getEntityStoreRegistry().registerSystem(shadowsSystem);
             getEntityStoreRegistry().registerSystem(shinyTrapSystem);
+            // FIX v0.3.2: TorchExtinguishSystem and ItemStealSystem are utility
+            // classes, not TickingSystems — removed from this log line.
             log(Level.INFO,
-                    "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17TorchExtinguishSystem, X17ItemStealSystem, X17ShadowsSystem, X17ShinyTrapSystem");
+                    "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }

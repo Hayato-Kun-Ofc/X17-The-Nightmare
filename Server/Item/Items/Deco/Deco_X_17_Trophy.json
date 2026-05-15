@@ -30,9 +30,7 @@
       ]
     },
     "Gathering": {
-      "Breaking": {
-        "GatherType": "Pickaxe"
-      }
+      "Soft": {}
     },
     "Flags": {
       "IsStackable": true

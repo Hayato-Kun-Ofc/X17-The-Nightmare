@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.3.1
+ * X17EventSystem - v0.3.2
  */
 public class X17EventSystem {
 
@@ -170,6 +170,7 @@ public class X17EventSystem {
             // (if it survived from a previous night) with the new night's budget
             // and directives.
             reconfigureExistingEntityForNewNight(store);
+
         }
 
         // This is the Day reset
@@ -317,13 +318,16 @@ public class X17EventSystem {
         plugin.log(Level.INFO, "A soul entered the darkness...");
     }
 
-    @SuppressWarnings("deprecation")
     private void onPlayerReady(PlayerReadyEvent event) {
         try {
             plugin.log(Level.INFO, "Player ready. Checking welcome UI...");
 
-            PlayerRef playerRef = event.getPlayer().getPlayerRef();
             Store<EntityStore> store = event.getPlayerRef().getStore();
+            PlayerRef playerRef = store.getComponent(event.getPlayerRef(), PlayerRef.getComponentType());
+            if (playerRef == null) {
+                plugin.log(Level.WARNING, "PlayerRef component is null for ready player. Skipping welcome UI.");
+                return;
+            }
             UUID uuid = playerRef.getUuid();
             String worldName = resolveWorldName(store);
 
@@ -394,14 +398,12 @@ public class X17EventSystem {
      * Returns true if the given store has at least one player present.
      * Used by the primary-store guard to prefer a populated store.
      */
-    @SuppressWarnings("deprecation")
     private boolean hasAnyPlayer(Store<EntityStore> store) {
         try {
             EntityStore es = (EntityStore) store.getExternalData();
             if (es == null || es.getWorld() == null)
                 return false;
-            var players = es.getWorld().getPlayers();
-            return players != null && !players.isEmpty();
+            return es.getWorld().getPlayerCount() > 0;
         } catch (Exception e) {
             return false;
         }
@@ -554,18 +556,17 @@ public class X17EventSystem {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private TransformComponent findNearestPlayerTransform(World world, Store<EntityStore> store) {
-        if (world.getPlayers() == null || world.getPlayers().isEmpty()) {
+        if (world.getPlayerRefs() == null || world.getPlayerRefs().isEmpty()) {
             return null;
         }
 
-        for (Player player : world.getPlayers()) {
-            if (player == null || player.getReference() == null) {
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+            if (playerRef == null || playerRef.getReference() == null) {
                 continue;
             }
 
-            TransformComponent pt = store.getComponent(player.getReference(), TransformComponent.getComponentType());
+            TransformComponent pt = store.getComponent(playerRef.getReference(), TransformComponent.getComponentType());
             if (pt == null) {
                 continue;
             }
@@ -583,10 +584,12 @@ public class X17EventSystem {
         double spread = 2.6;
         double angle = center + randomRange(-spread / 2.0, spread / 2.0);
         double distance = randomRange(42.0, 64.0);
+        // FIX v0.3.2: was Math.cos/Math.sin (X/Z) — flipped 90° vs rest of mod.
+        // Convention throughout is sin(yaw)→X, cos(yaw)→Z (matches faceTarget atan2(dx,dz)).
         return new Vector3d(
-                playerPos.getX() + Math.cos(angle) * distance,
+                playerPos.getX() + Math.sin(angle) * distance,
                 playerPos.getY(),
-                playerPos.getZ() + Math.sin(angle) * distance);
+                playerPos.getZ() + Math.cos(angle) * distance);
     }
 
     private double randomRange(double min, double max) {

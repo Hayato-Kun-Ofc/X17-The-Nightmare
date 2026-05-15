@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
@@ -23,7 +24,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.3.1
+ * X17AISystem - v0.3.2
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -1021,18 +1022,20 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                 - playerTf.getRotation().getX())) <= PLAYER_PITCH_HALF;
     }
 
-    @SuppressWarnings("deprecation")
     private TargetData selectNearestPlayer(World world, Store<EntityStore> store, Vector3d referencePos) {
-        if (world.getPlayers() == null)
+        if (world.getPlayerRefs() == null)
             return null;
 
         TargetData nearest = null;
         double minDistance = Double.MAX_VALUE;
 
-        for (Player p : world.getPlayers()) {
-            if (p == null || p.getReference() == null)
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+            if (playerRef == null || playerRef.getReference() == null)
                 continue;
-            TransformComponent tf = store.getComponent(p.getReference(), TransformComponent.getComponentType());
+            Player p = store.getComponent(playerRef.getReference(), Player.getComponentType());
+            if (p == null)
+                continue;
+            TransformComponent tf = store.getComponent(playerRef.getReference(), TransformComponent.getComponentType());
             if (tf != null) {
                 if (referencePos == null) {
                     return new TargetData(p, tf, 0.0);

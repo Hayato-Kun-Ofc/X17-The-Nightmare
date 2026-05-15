@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * X17PlayerComponent — v0.3.1
+ * X17PlayerComponent — v0.3.2
  * Stores persistent data related to the X17 mod on the player entity.
  */
 public class X17PlayerComponent implements Component<EntityStore> {
@@ -20,7 +20,7 @@ public class X17PlayerComponent implements Component<EntityStore> {
 
     public static final BuilderCodec<X17PlayerComponent> CODEC = BuilderCodec
             .builder(X17PlayerComponent.class, X17PlayerComponent::new)
-            .addField(new KeyedCodec<>("SeenWelcomeWorldsCSV", Codec.STRING),
+            .append(new KeyedCodec<>("SeenWelcomeWorldsCSV", Codec.STRING),
                     (c, v) -> {
                         c.seenWelcomeWorlds.clear();
                         if (v != null && !v.isEmpty()) {
@@ -29,7 +29,7 @@ public class X17PlayerComponent implements Component<EntityStore> {
                             }
                         }
                     },
-                    c -> String.join(",", c.seenWelcomeWorlds))
+                    c -> String.join(",", c.seenWelcomeWorlds)).add()
             .build();
 
     private Set<String> seenWelcomeWorlds = new HashSet<>();
