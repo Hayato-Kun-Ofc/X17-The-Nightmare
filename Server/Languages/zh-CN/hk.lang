@@ -1,0 +1,20 @@
+npcRoles.X_17.name=X-17
+npcRoles.X_17.description=X-17 梦魇
+npcRoles.X_17.lore=在黑夜中出没的神秘实体
+
+items.X_17.name=X-17 梦魇
+items.X_17.description=只在最黑暗的时刻出现的神秘而空灵的实体
+items.X_17.lore=X-17 是一种神秘的生物，诞生于世界之间的边界。它既非完全存在，也非完全虚无，只在深夜最深处显现。它在远处观察，被旅行者的存在所吸引。
+
+items.Deco_X_17_Trophy.name=X-17 头颅
+items.Deco_X_17_Trophy.description=在迷雾中潜行之梦魇实体的骇人战利品，它的能量依然清晰可感。
+
+customUI.Pages.X17WelcomePage.title=欢迎来到梦魇
+customUI.Pages.X17WelcomePage.subtitle=X-17 梦魇 — v0.3.3
+customUI.Pages.X17WelcomePage.body=像往常一样在这个世界中生存下去。\n建造你的庇护所。收集你的资源。点燃你的篝火。\n \n但要小心——夜晚和洞穴将再也不同以往。\n有什么东西潜伏在迷雾之中。有什么东西在注视着。\n \n你正被注视着。
+customUI.Pages.X17WelcomePage.tipTitle=生存提示
+customUI.Pages.X17WelcomePage.tip1= > 建造墙壁和屋顶，门窗可能是你唯一的预警。
+customUI.Pages.X17WelcomePage.tip2= > 寂静毫无意义。声响毫无意义。不要相信任何事物。
+customUI.Pages.X17WelcomePage.button=我明白了。开始。
+
+memories.categories.Unique.title = 独特

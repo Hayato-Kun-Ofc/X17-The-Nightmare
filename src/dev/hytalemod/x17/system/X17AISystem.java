@@ -24,7 +24,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.3.2
+ * X17AISystem - v0.3.3
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.

@@ -29,7 +29,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.3.2
+ * X17Plugin - v0.3.3
  */
 public class X17Plugin extends JavaPlugin {
 
@@ -52,7 +52,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.2 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.3 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(

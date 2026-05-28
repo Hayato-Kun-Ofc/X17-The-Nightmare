@@ -24,7 +24,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem — v0.3.2
+ * X17ShinyTrapSystem — v0.3.3
  *
  * ── GHOST NIGHT DECOY AMBUSH
  * ──────────────────────────────────────────────────
@@ -111,7 +111,8 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
     private static final double LEAD_DIST = 6.0;
 
     /** Movement speed toward destination (blocks/tick, ~20 tps → 0.4 b/s). */
-    private static final double DECOY_SPEED = 0.02; // FIX v0.3.2: was 0.02*20=0.4 b/tick (8 b/s); correct is 0.02 b/tick = 0.4 b/s
+    private static final double DECOY_SPEED = 0.02; // FIX v0.3.2: was 0.02*20=0.4 b/tick (8 b/s); correct is 0.02
+                                                    // b/tick = 0.4 b/s
 
     /** Arrival threshold — decoy is "at destination" when this close (sq). */
     private static final double ARRIVE_DIST_SQ = 1.5 * 1.5;
