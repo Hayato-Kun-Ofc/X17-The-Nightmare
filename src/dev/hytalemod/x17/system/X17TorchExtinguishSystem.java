@@ -1,6 +1,6 @@
 package dev.hytalemod.x17.system;
 
-import com.hypixel.hytale.math.vector.Vector3d;
+import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.world.World;
 import dev.hytalemod.x17.X17Plugin;
@@ -19,27 +19,27 @@ import java.util.logging.Level;
  *
  * BLOCK API CHAIN (safe, no silent-fail):
  * ChunkUtil.indexChunkFromBlock(x, z)
- * → world.getNonTickingChunk(index) → BlockAccessor
- * → accessor.getBlockType(x, y, z) → BlockType (read)
- * → accessor.setBlockInteractionState(x, y, z, blockType, "Off", false)
+ * -> world.getNonTickingChunk(index) -> BlockAccessor
+ * -> accessor.getBlockType(x, y, z) -> BlockType (read)
+ * -> accessor.setBlockInteractionState(x, y, z, blockType, "Off", false)
  *
  * Calling world.getBlockType / world.setBlock directly compiles but silently
- * fails at runtime — always go through the chunk accessor.
+ * fails at runtime - always go through the chunk accessor.
  *
  * TORCH BLOCK IDs (Hytale naming):
  * All known torch variants that carry an interaction state "Off" / "On"
  * are stored in TORCH_BLOCK_IDS. IDs are matched against the normalised
- * suffix (after the last ':'), lower-cased, with any leading '*' stripped —
+ * suffix (after the last ':'), lower-cased, with any leading '*' stripped  -
  * the same normalisation used across the rest of the mod.
  *
  * AOE:
  * Default radius is 20 blocks (manhattan-style cube sweep for performance).
- * The vertical scan is kept narrow (-2 … +4 relative to the centre Y) to
+ * The vertical scan is kept narrow (-2 ... +4 relative to the centre Y) to
  * avoid wasting time on underground or sky blocks.
  */
 public class X17TorchExtinguishSystem {
 
-    // ── Configuration ─────────────────────────────────────────────────────────
+    // Configuration
 
     /** Horizontal radius (blocks) around the target position to scan. */
     private static final int AOE_RADIUS = 35;
@@ -56,7 +56,7 @@ public class X17TorchExtinguishSystem {
      */
     private static final String STATE_OFF = "Off";
 
-    // ── Known torch block IDs ─────────────────────────────────────────────────
+    // Known torch block IDs
 
     /**
      * Normalised block ID suffixes for every torch / light source that
@@ -67,11 +67,11 @@ public class X17TorchExtinguishSystem {
      * normalizeBlockId() transform used elsewhere in the mod.
      */
     private static final ArrayList<String> TORCH_BLOCK_IDS = new ArrayList<>(Arrays.asList(
-            // ── Standard torches ──────────────────────────────────────────────
+            // Standard torches
             "torch",
             "wall_torch",
             "torch_on_wall",
-            // ── Coloured / variant torches ────────────────────────────────────
+            // Coloured / variant torches
             "torch_blue",
             "torch_green",
             "torch_purple",
@@ -84,26 +84,26 @@ public class X17TorchExtinguishSystem {
             "wall_torch_red",
             "wall_torch_white",
             "wall_torch_yellow",
-            // ── Campfires & lanterns (also carry On/Off state) ────────────────
+            // Campfires & lanterns (also carry On/Off state)
             "campfire",
             "campfire_lit",
             "lantern",
             "lantern_hanging",
             "lantern_standing",
-            // ── Sconces / wall sconces ────────────────────────────────────────
+            // Sconces / wall sconces
             "sconce",
             "wall_sconce",
             "sconce_lit",
-            // ── Candles ───────────────────────────────────────────────────────
+            // Candles
             "candle",
             "candle_lit",
             "candle_wall",
-            // ── Generic fallback prefix (any block whose id contains "torch") ─
+            // Generic fallback prefix (any block whose id contains "torch")
             // (handled separately in isTorchBlock)
-            "__prefix_torch__" // sentinel — do not remove; drives prefix check
+            "__prefix_torch__" // sentinel - do not remove; drives prefix check
     ));
 
-    // ── Singleton / constructor ───────────────────────────────────────────────
+    // Singleton / constructor
 
     public X17TorchExtinguishSystem() {
         // No per-instance state needed; all work is done in extinguishTorchesAround.
@@ -122,19 +122,19 @@ public class X17TorchExtinguishSystem {
      * current night, or on a targeted scare event.
      * </p>
      *
-     * @param world  the world in which to operate — must not be {@code null}
+     * @param world  the world in which to operate - must not be {@code null}
      * @param centre world-space position to scan around (typically the player
-     *               position at the moment X17 appears)
+     *              position at the moment X17 appears)
      */
     public void extinguishTorchesAround(World world, Vector3d centre) {
         if (world == null || centre == null) {
-            log(Level.WARNING, "[Torch] extinguishTorchesAround called with null arg — skipped.");
+            log(Level.WARNING, "[Torch] extinguishTorchesAround called with null arg - skipped.");
             return;
         }
 
-        int cx = (int) Math.floor(centre.getX());
-        int cy = (int) Math.floor(centre.getY());
-        int cz = (int) Math.floor(centre.getZ());
+        int cx = (int) Math.floor(centre.x());
+        int cy = (int) Math.floor(centre.y());
+        int cz = (int) Math.floor(centre.z());
 
         int extinguished = 0;
 
@@ -155,7 +155,7 @@ public class X17TorchExtinguishSystem {
                             continue;
 
                         // Toggle the block to its "Off" interaction state.
-                        world.setBlockInteractionState(new com.hypixel.hytale.math.vector.Vector3i(bx, by, bz), bt,
+                        world.setBlockInteractionState(new org.joml.Vector3i(bx, by, bz), bt,
                                 STATE_OFF);
                         extinguished++;
 
@@ -201,7 +201,7 @@ public class X17TorchExtinguishSystem {
         // variants without maintaining an exhaustive list.
         if (normId.contains("torch"))
             return true;
-        // Check the rest of the explicit list (campfires, lanterns, sconces…).
+        // Check the rest of the explicit list (campfires, lanterns, sconces...).
         for (String id : TORCH_BLOCK_IDS) {
             if (id.startsWith("__"))
                 continue; // skip sentinels
@@ -219,9 +219,9 @@ public class X17TorchExtinguishSystem {
      * <p>
      * Examples:
      * <ul>
-     * <li>{@code "zone:torch"} → {@code "torch"}</li>
-     * <li>{@code "*torch_blue"} → {@code "torch_blue"}</li>
-     * <li>{@code "Empty"} → {@code "empty"}</li>
+     * <li>{@code "zone:torch"} -> {@code "torch"}</li>
+     * <li>{@code "*torch_blue"} -> {@code "torch_blue"}</li>
+     * <li>{@code "Empty"} -> {@code "empty"}</li>
      * </ul>
      * </p>
      */
@@ -235,7 +235,7 @@ public class X17TorchExtinguishSystem {
     }
 
     private String formatPos(Vector3d pos) {
-        return String.format("(%.1f, %.1f, %.1f)", pos.getX(), pos.getY(), pos.getZ());
+        return String.format("(%.1f, %.1f, %.1f)", pos.x(), pos.y(), pos.z());
     }
 
     private void log(Level level, String msg) {

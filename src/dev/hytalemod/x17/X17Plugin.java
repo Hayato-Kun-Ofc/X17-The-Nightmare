@@ -90,7 +90,7 @@ public class X17Plugin extends JavaPlugin {
             getEntityStoreRegistry().registerSystem(shadowsSystem);
             getEntityStoreRegistry().registerSystem(shinyTrapSystem);
             // FIX v0.3.2: TorchExtinguishSystem and ItemStealSystem are utility
-            // classes, not TickingSystems — removed from this log line.
+            // classes, not TickingSystems - removed from this log line.
             log(Level.INFO,
                     "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
         } catch (Exception e) {

@@ -2,7 +2,7 @@ package dev.hytalemod.x17.system;
 
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
-import com.hypixel.hytale.math.vector.Vector3d;
+import org.joml.Vector3d;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
@@ -32,9 +32,9 @@ import java.util.logging.Level;
  */
 public class X17SoundSystem extends TickingSystem<EntityStore> {
 
-    private static final double SPAWN_KNOCK_CHANCE = 0.18;
+    private static final double SPAWN_KNOCK_CHANCE = 0.20;
     private static final double SPAWN_WHISPER_CHANCE = 0.22;
-    private static final double GHOST_WHISPER_CHANCE = 0.18;
+    private static final double GHOST_WHISPER_CHANCE = 0.21;
 
     private static final int SCAN_INTERVAL_SPAWN = 180;
     private static final int SCAN_INTERVAL_GHOST = 260;
@@ -139,7 +139,7 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     @Override
     public void tick(float deltaTime, int tickIndex, Store<EntityStore> store) {
         try {
-            // Scare sting has highest priority — fire immediately when pending.
+            // Scare sting has highest priority - fire immediately when pending.
             if (scareSoundPending && scareSoundPosition != null) {
                 scareSoundPending = false;
                 Vector3d pos = scareSoundPosition;
@@ -258,9 +258,9 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     }
 
     private StructureContext scanStructureContext(Vector3d pos, World world) {
-        int px = (int) Math.floor(pos.getX());
-        int py = (int) Math.floor(pos.getY());
-        int pz = (int) Math.floor(pos.getZ());
+        int px = (int) Math.floor(pos.x());
+        int py = (int) Math.floor(pos.y());
+        int pz = (int) Math.floor(pos.z());
 
         int doors = 0;
         int windows = 0;
@@ -299,9 +299,9 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
         double angle = rng.nextDouble() * Math.PI * 2.0;
         double distance = minDistance + (rng.nextDouble() * (maxDistance - minDistance));
         return new Vector3d(
-                origin.getX() + Math.cos(angle) * distance,
-                origin.getY(),
-                origin.getZ() + Math.sin(angle) * distance);
+                origin.x() + Math.cos(angle) * distance,
+                origin.y(),
+                origin.z() + Math.sin(angle) * distance);
     }
 
     private void triggerSound(String soundId, Vector3d pos, Store<EntityStore> store) {
@@ -313,9 +313,9 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
             }
 
             SoundUtil.playSoundEvent3d(idx, SoundCategory.SFX,
-                    pos.getX(), pos.getY(), pos.getZ(), store);
+                    pos.x(), pos.y(), pos.z(), store);
             log(Level.INFO, "[SND] " + soundId + " @ "
-                    + (int) pos.getX() + "," + (int) pos.getY() + "," + (int) pos.getZ());
+                    + (int) pos.x() + "," + (int) pos.y() + "," + (int) pos.z());
         } catch (Exception e) {
             log(Level.SEVERE, "[SND] Failed to play " + soundId + ": " + e.getMessage());
         }
@@ -379,3 +379,4 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
         }
     }
 }
+

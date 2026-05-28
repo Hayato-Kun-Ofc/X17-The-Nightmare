@@ -3,8 +3,7 @@ package dev.hytalemod.x17.system;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
@@ -34,7 +33,7 @@ import java.util.logging.Level;
  * - Each shadow has a 2-second (40 tick) lifetime.
  * - If the player looks directly at a shadow, it vanishes instantly.
  * - After 40 ticks, all remaining shadows vanish automatically.
- * - Shadows have 100 HP but cannot attack — purely psychological.
+ * - Shadows have 100 HP but cannot attack - purely psychological.
  *
  * ENTITY LIFECYCLE:
  * The Hytale ECS Store API does not expose a destroyEntity method.
@@ -56,13 +55,13 @@ import java.util.logging.Level;
  */
 public class X17ShadowsSystem extends TickingSystem<EntityStore> {
 
-    // ── Configuration ─────────────────────────────────────────────────────────
+    // Configuration
 
     /**
      * Chance to trigger the shadow event on non-spawn nights.
-     * Set to 1.0 (100%) for testing — change to 0.35 (35%) for production.
+     * Set to 1.0 (100%) for testing - change to 0.46 (46%) for production.
      */
-    private static final double SHADOW_CHANCE = 0.35;
+    private static final double SHADOW_CHANCE = 0.46;
 
     /** Number of shadow entities to spawn around the player. */
     private static final int SHADOW_COUNT = 5;
@@ -82,20 +81,20 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     private static final int SHADOW_ACTIVATION_DELAY = 2000;
 
     /** Y coordinate used to hide "despawned" shadow entities underground. */
-    private static final double POOL_HIDE_Y = -200.0;
+    private static final double POOL_HIDE_Y = -31.0;
 
-    // ── FOV detection constants (mirrors X17AISystem) ─────────────────────────
+    // FOV detection constants (mirrors X17AISystem)
 
     private static final double PLAYER_FOV_HALF = 0.38;
     private static final double PLAYER_PITCH_HALF = 0.52;
     private static final double LOOK_RANGE = 72.0;
 
-    // ── Night-time range ──────────────────────────────────────────────────────
+    // Night-time range
 
     private static final double NIGHT_START = 0.792;
     private static final double NIGHT_END = 0.208;
 
-    // ── Per-night state ───────────────────────────────────────────────────────
+    // Per-night state
 
     private boolean shadowEnabledThisNight = false;
     private boolean shadowEventDoneThisNight = false;
@@ -104,7 +103,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     private int shadowLifetimeCounter = 0;
 
     /**
-     * Entity pool — persists across nights. Refs are reused to avoid
+     * Entity pool - persists across nights. Refs are reused to avoid
      * accumulating entities. Only populated the first time shadows spawn.
      * Each entry tracks the entity ref, its pool slot index, and whether
      * it is currently "visible" (active in the world) or "hidden" (at Y=-200).
@@ -114,7 +113,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     private final Random rng = new Random();
 
     // =========================================================================
-    // PUBLIC API — called by X17AISystem.resetTorchNight()
+    // PUBLIC API - called by X17AISystem.resetTorchNight()
     // =========================================================================
 
     /**
@@ -124,7 +123,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
      * @param isSpawnNight true if X17 is scheduled to appear this night
      */
     public void resetShadowNight(boolean isSpawnNight) {
-        // Reset per-night flags (pool is NOT cleared — intentional for reuse)
+        // Reset per-night flags (pool is NOT cleared - intentional for reuse)
         shadowEventDoneThisNight = false;
         shadowDelayCounter = 0;
         shadowsActive = false;
@@ -135,9 +134,9 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
         markAllPoolHidden();
 
         if (isSpawnNight) {
-            // X17 is active tonight — no shadows
+            // X17 is active tonight - no shadows
             shadowEnabledThisNight = false;
-            log(Level.INFO, "[Shadows] Night rolled: spawn night — shadows disabled.");
+            log(Level.INFO, "[Shadows] Night rolled: spawn night - shadows disabled.");
             return;
         }
 
@@ -151,7 +150,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // TICK — called every server tick by the engine
+    // TICK - called every server tick by the engine
     // =========================================================================
 
     @Override
@@ -174,7 +173,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
 
             World world = es.getWorld();
 
-            // ── Phase 1: Waiting for activation delay ─────────────────────────
+            // Phase 1: Waiting for activation delay
             if (!shadowsActive) {
                 shadowDelayCounter++;
                 if (shadowDelayCounter < SHADOW_ACTIVATION_DELAY) {
@@ -199,7 +198,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 return;
             }
 
-            // ── Phase 2: Shadows are active — tick every frame ────────────────
+            // Phase 2: Shadows are active - tick every frame
             shadowLifetimeCounter++;
 
             Player targetPlayer = findAnyPlayer(world, store);
@@ -251,7 +250,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 // continue;
                 // }
 
-                // Lifetime expired — auto vanish
+                // Lifetime expired - auto vanish
                 if (shadowLifetimeCounter >= SHADOW_LIFETIME_TICKS) {
                     log(Level.INFO, "[Shadows] Shadow #" + shadow.index
                             + " vanished (lifetime expired) at "
@@ -263,11 +262,11 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 visibleCount++;
             }
 
-            // All shadows gone — event complete for this night
+            // All shadows gone - event complete for this night
             if (visibleCount == 0) {
                 shadowsActive = false;
                 shadowEventDoneThisNight = true;
-                log(Level.INFO, "[Shadows] Shadow event complete — all shadows vanished.");
+                log(Level.INFO, "[Shadows] Shadow event complete - all shadows vanished.");
             }
 
         } catch (Exception e) {
@@ -302,14 +301,14 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
 
         for (int i = 0; i < SHADOW_COUNT; i++) {
             // Calculate position for this shadow
-            double jitter = (rng.nextDouble() - 0.5) * 0.35; // ±10° randomness
+            double jitter = (rng.nextDouble() - 0.5) * 0.35; // +/-10 deg randomness
             double angle = baseAngle + (angleStep * i) + jitter;
             double distance = SHADOW_DISTANCE + (rng.nextDouble() - 0.5) * 6.0;
 
             Vector3d spawnPos = new Vector3d(
-                    playerPos.getX() + Math.cos(angle) * distance,
-                    playerPos.getY(),
-                    playerPos.getZ() + Math.sin(angle) * distance);
+                    playerPos.x() + Math.cos(angle) * distance,
+                    playerPos.y(),
+                    playerPos.z() + Math.sin(angle) * distance);
 
             // Try to reuse a hidden pool entry
             ShadowEntry existing = findHiddenPoolEntry();
@@ -326,19 +325,19 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                             + " | dist=" + String.format("%.1f", distance));
                     continue;
                 } else {
-                    // Ref valid but no transform — mark for removal
+                    // Ref valid but no transform - mark for removal
                     existing.ref = null;
                 }
             }
 
-            // No reusable entry — spawn a fresh entity
+            // No reusable entry - spawn a fresh entity
             boolean success = spawnShadowEntity(store, spawnPos, playerPos, i);
             if (success) {
                 spawned++;
                 log(Level.INFO, "[Shadows] Shadow #" + i + " SPAWNED at "
                         + formatPos(spawnPos)
                         + " | dist=" + String.format("%.1f", distance)
-                        + " | angle=" + String.format("%.2f", Math.toDegrees(angle)) + "°");
+                        + " | angle=" + String.format("%.2f", Math.toDegrees(angle)) + " deg");
             } else {
                 log(Level.WARNING, "[Shadows] Shadow #" + i + " FAILED to spawn.");
             }
@@ -350,7 +349,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 totalVisible++;
         }
 
-        log(Level.INFO, "[Shadows] Activation complete — " + totalVisible
+        log(Level.INFO, "[Shadows] Activation complete - " + totalVisible
                 + " / " + SHADOW_COUNT + " shadows active"
                 + " (reused=" + reused + ", spawned=" + spawned
                 + ", pool size=" + entityPool.size() + ").");
@@ -396,8 +395,8 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
             }
 
             // Calculate initial facing rotation toward player
-            double dx = playerPos.getX() - spawnPos.getX();
-            double dz = playerPos.getZ() - spawnPos.getZ();
+            double dx = playerPos.x() - spawnPos.x();
+            double dz = playerPos.z() - spawnPos.z();
             float yaw = (float) Math.atan2(-dx, dz);
 
             final int idx = shadowIndex;
@@ -427,7 +426,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                     store,
                     roleIndex,
                     spawnPos,
-                    new Vector3f(0f, yaw, 0f),
+                    new com.hypixel.hytale.math.vector.Rotation3f(0f, yaw, 0f),
                     null,
                     postSpawn);
 
@@ -441,7 +440,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // HIDE / SHOW — the "despawn" mechanism
+    // HIDE / SHOW - the "despawn" mechanism
     // =========================================================================
 
     /**
@@ -451,9 +450,9 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     private void hideShadow(TransformComponent shadowTf, ShadowEntry shadow) {
         try {
             shadowTf.teleportPosition(new Vector3d(
-                    shadowTf.getPosition().getX(),
+                    shadowTf.getPosition().x(),
                     POOL_HIDE_Y,
-                    shadowTf.getPosition().getZ()));
+                    shadowTf.getPosition().z()));
             shadow.visible = false;
         } catch (Exception e) {
             log(Level.WARNING, "[Shadows] Failed to hide shadow #" + shadow.index
@@ -463,7 +462,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     }
 
     /**
-     * Hides all visible shadows — used when the event ends abruptly
+     * Hides all visible shadows - used when the event ends abruptly
      * (player disconnects, etc).
      */
     private void hideAllShadows(Store<EntityStore> store, String reason) {
@@ -538,11 +537,12 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
      */
     private boolean isPlayerWatchingShadow(TransformComponent playerTf,
             TransformComponent shadowTf) {
+        // Deprecated: no longer used - kept for reference
         Vector3d pPos = playerTf.getPosition();
         Vector3d sPos = shadowTf.getPosition();
-        double dx = sPos.getX() - pPos.getX();
-        double dy = sPos.getY() - pPos.getY();
-        double dz = sPos.getZ() - pPos.getZ();
+        double dx = sPos.x() - pPos.x();
+        double dy = sPos.y() - pPos.y();
+        double dz = sPos.z() - pPos.z();
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         if (dist < 0.001 || dist > LOOK_RANGE) {
@@ -550,13 +550,13 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
         }
 
         double yawToShadow = Math.atan2(dx, dz);
-        double yawDelta = normalizeAngle(yawToShadow - playerTf.getRotation().getYaw());
+        double yawDelta = normalizeAngle(yawToShadow - playerTf.getRotation().yaw());
         if (Math.abs(yawDelta) > PLAYER_FOV_HALF) {
             return false;
         }
 
         double pitchToShadow = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz));
-        double pitchDelta = normalizeAngle(pitchToShadow - playerTf.getRotation().getX());
+        double pitchDelta = normalizeAngle(pitchToShadow - playerTf.getRotation().x());
         return Math.abs(pitchDelta) <= PLAYER_PITCH_HALF;
     }
 
@@ -566,9 +566,9 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
 
     private void faceTarget(TransformComponent tf, Vector3d target) {
         Vector3d pos = tf.getPosition();
-        tf.setRotation(new Vector3f(0f,
-                (float) Math.atan2(-(target.getX() - pos.getX()),
-                        target.getZ() - pos.getZ()),
+        tf.setRotation(new com.hypixel.hytale.math.vector.Rotation3f(0f,
+                (float) Math.atan2(-(target.x() - pos.x()),
+                        target.z() - pos.z()),
                 0f));
     }
 
@@ -606,7 +606,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     }
 
     private String formatPos(Vector3d pos) {
-        return String.format("(%.1f, %.1f, %.1f)", pos.getX(), pos.getY(), pos.getZ());
+        return String.format("(%.1f, %.1f, %.1f)", pos.x(), pos.y(), pos.z());
     }
 
     private void log(Level level, String msg) {

@@ -9,11 +9,6 @@
             "Tag": "Caves"
         }
     },
-    "Music": {
-        "Tracks": [
-            "Music/X_17/Ambience_HK.ogg"
-        ]
-    },
-    "AudioCategory": "AudioCat_Music",
+    "MusicContainer": "Track_X_17_Ambience_HK",
     "Priority": 100
 }

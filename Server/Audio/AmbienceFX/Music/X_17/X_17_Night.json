@@ -26,11 +26,6 @@
             ]
         }
     },
-    "Music": {
-        "Tracks": [
-            "Music/X_17/Timehascome.ogg"
-        ]
-    },
-    "AudioCategory": "AudioCat_Music",
+    "MusicContainer": "Track_X_17_Timehascome",
     "Priority": 100
 }

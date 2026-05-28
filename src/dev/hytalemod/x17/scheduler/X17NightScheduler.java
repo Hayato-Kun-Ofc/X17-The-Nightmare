@@ -21,23 +21,23 @@ import java.util.logging.Level;
  * Decides per-night behaviour (SPAWN / GHOST_SOUNDS / SILENT) and persists
  * state across server restarts so the night counter never resets.
  *
- * ── SAVE / LOAD DESIGN ────────────────────────────────────────────────────
+ * -- SAVE / LOAD DESIGN ----------------------------------------------------
  *
  * Files written for each world:
- * scheduler_<world>.properties ← current live state
- * scheduler_<world>.properties.bak ← last known-good backup
- * scheduler_<world>.properties.tmp ← write target before atomic rename
+ * scheduler_<world>.properties <- current live state
+ * scheduler_<world>.properties.bak <- last known-good backup
+ * scheduler_<world>.properties.tmp <- write target before atomic rename
  *
  * Write sequence (atomic, crash-safe):
  * 1. Write all fields to .tmp
- * 2. If .tmp write succeeds: rename primary → .bak (overwrites old backup)
- * 3. Rename .tmp → primary
+ * 2. If .tmp write succeeds: rename primary -> .bak (overwrites old backup)
+ * 3. Rename .tmp -> primary
  * If any step fails, the primary and .bak are untouched.
  *
  * Load sequence (with fallback):
- * 1. Try primary file. If OK → done.
- * 2. If primary missing/corrupt → try .bak. If OK → done + warn.
- * 3. If both fail → start from night 0, warn operator.
+ * 1. Try primary file. If OK -> done.
+ * 2. If primary missing/corrupt -> try .bak. If OK -> done + warn.
+ * 3. If both fail -> start from night 0, warn operator.
  *
  * All integer fields are validated after load (clamped, not silently used).
  * The night decision is persisted so a mid-night restart restores the same
@@ -45,25 +45,25 @@ import java.util.logging.Level;
  */
 public class X17NightScheduler {
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // -- State -----------------------------------------------------------------
     private int currentNight = 0;
     private int consecutiveNightsWithoutSpawn = 0;
     private NightDecision currentDecision = NightDecision.PENDING;
     private float ghostSoundMultiplier = 1.0f;
     private boolean isTensionNight = false;
 
-    // ── Transition guards ─────────────────────────────────────────────────────
+    // -- Transition guards -----------------------------------------------------
     private boolean nightTransitionHandled = false;
     private boolean dayTransitionHandled = false;
     private boolean firstTick = true;
 
-    // ── Tuning ────────────────────────────────────────────────────────────────
+    // -- Tuning ----------------------------------------------------------------
     private static final float[] SPAWN_CHANCES = { 0.30f, 0.45f, 0.55f, 0.60f, 0.65f };
     private static final int TENSION_NIGHT_THRESHOLD = 3;
     private static final float TENSION_SOUND_MULTIPLIER = 2.0f;
     private static final float GHOST_SOUND_MULTIPLIER = 1.5f;
 
-    // ── Validation limits ─────────────────────────────────────────────────────
+    // -- Validation limits -----------------------------------------------------
     private static final int MAX_SANE_NIGHT = 100_000;
     private static final int MAX_SANE_CONSECUTIVE = 1_000;
 
@@ -194,12 +194,12 @@ public class X17NightScheduler {
     }
 
     // =========================================================================
-    // PERSISTENT STATE — LOAD
+    // PERSISTENT STATE - LOAD
     // =========================================================================
 
     private void loadState(String worldName) {
         if (worldName == null || worldName.isEmpty()) {
-            log(Level.WARNING, "No world name provided — starting from night 0.");
+            log(Level.WARNING, "No world name provided - starting from night 0.");
             return;
         }
 
@@ -217,12 +217,12 @@ public class X17NightScheduler {
             return;
 
         log(Level.WARNING, "No valid state found for world '" + worldName
-                + "' — starting from night 0.");
+                + "' - starting from night 0.");
     }
 
     /**
      * Attempt to load from {@code file}.
-     * 
+     *
      * @param isBackup true if this is the .bak fallback (changes log message).
      * @return true if the file was loaded successfully.
      */
@@ -258,7 +258,7 @@ public class X17NightScheduler {
     }
 
     // =========================================================================
-    // PERSISTENT STATE — SAVE (atomic write-rename with backup)
+    // PERSISTENT STATE - SAVE (atomic write-rename with backup)
     // =========================================================================
 
     private void saveState(String worldName) {
@@ -282,24 +282,24 @@ public class X17NightScheduler {
             return;
         }
 
-        // Step 2: rotate primary → .bak (best-effort — failure here is non-fatal)
+        // Step 2: rotate primary -> .bak (best-effort - failure here is non-fatal)
         if (primary.exists()) {
             try {
                 Files.move(primary.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 log(Level.WARNING, "Could not rotate backup (non-fatal): " + e.getMessage());
-                // Continue anyway — the .tmp is still valid.
+                // Continue anyway - the .tmp is still valid.
             }
         }
 
-        // Step 3: rename .tmp → primary (atomic on most OSes)
+        // Step 3: rename .tmp -> primary (atomic on most OSes)
         try {
             Files.move(tmp.toPath(), primary.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             log(Level.SEVERE, "CRITICAL: Could not finalise state save! "
                     + "State is in '" + tmp.getName() + "'. "
                     + "Reason: " + e.getMessage());
-            // Do NOT delete tmp — operator can recover manually.
+            // Do NOT delete tmp - operator can recover manually.
         }
     }
 
@@ -324,7 +324,7 @@ public class X17NightScheduler {
 
     /**
      * Resolves and creates the state directory.
-     * 
+     *
      * @return the directory, or {@code null} if it cannot be created.
      */
     private File resolveStateDir() {
@@ -332,7 +332,7 @@ public class X17NightScheduler {
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
                 log(Level.SEVERE, "Cannot create state directory: " + dir.getAbsolutePath()
-                        + " — check file-system permissions. State will NOT be saved.");
+                        + " - check file-system permissions. State will NOT be saved.");
                 return null;
             }
         }
@@ -371,13 +371,13 @@ public class X17NightScheduler {
             int v = Integer.parseInt(raw.trim());
             if (v < min || v > max) {
                 log(Level.WARNING, "Property '" + key + "' value " + v
-                        + " out of valid range [" + min + ", " + max + "] — clamped.");
+                        + " out of valid range [" + min + ", " + max + "] - clamped.");
                 return Math.max(min, Math.min(max, v));
             }
             return v;
         } catch (NumberFormatException e) {
             log(Level.WARNING, "Property '" + key + "' is not a valid integer ('"
-                    + raw + "') — using default " + defaultVal + ".");
+                    + raw + "') - using default " + defaultVal + ".");
             return defaultVal;
         }
     }
@@ -388,7 +388,7 @@ public class X17NightScheduler {
         try {
             return NightDecision.valueOf(raw.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            log(Level.WARNING, "Unknown NightDecision value '" + raw + "' — defaulting to PENDING.");
+            log(Level.WARNING, "Unknown NightDecision value '" + raw + "' - defaulting to PENDING.");
             return NightDecision.PENDING;
         }
     }

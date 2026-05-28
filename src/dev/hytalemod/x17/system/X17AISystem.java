@@ -6,8 +6,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -33,66 +32,66 @@ import java.util.logging.Level;
  *
  * KEY DESIGN RULES
  * 1. X17 never walks toward the player during STALK. Locomotion = teleport.
- * 2. Unpredictability via weighted randomness — same situation never plays out
+ * 2. Unpredictability via weighted randomness - same situation never plays out
  * twice.
  * 3. HUNT_APPROACH is a slow, creeping advance. Not a charge.
  * 4. CHASE (RAGE) triggers via events, damage, or based on night personality.
- * 
+ *
  * 5. Night personality (CAUTIOUS / BOLD / ERRATIC) is rolled once per night and
  * biases every decision throughout that night.
  *
  * STATE MACHINE
- * DORMANT — Waiting. Entered at night-start or after cooldowns.
- * STALK — Stationary observation. Always faces player. Core horror state.
- * REPOSITION — Silent teleport to new vantage. Brief freeze, then STALK.
- * HUNT_APPROACH — Slow creep toward player. Escalates to AMBUSH_SCARE.
- * AMBUSH_SCARE — Freeze in player's face. Then TRUE_VANISH.
- * CHASE — RAGE mode. Fast pursuit. Entry ONLY via X17DamageSystem.
- * TRUE_VANISH — Full disappearance. Cooldown before return.
- * RETREAT — Multi-night cooldown after catching player in RAGE.
+ * DORMANT - Waiting. Entered at night-start or after cooldowns.
+ * STALK - Stationary observation. Always faces player. Core horror state.
+ * REPOSITION - Silent teleport to new vantage. Brief freeze, then STALK.
+ * HUNT_APPROACH - Slow creep toward player. Escalates to AMBUSH_SCARE.
+ * AMBUSH_SCARE - Freeze in player's face. Then TRUE_VANISH.
+ * CHASE - RAGE mode. Fast pursuit. Entry ONLY via X17DamageSystem.
+ * TRUE_VANISH - Full disappearance. Cooldown before return.
+ * RETREAT - Multi-night cooldown after catching player in RAGE.
  *
  * NIGHT PERSONALITIES
- * CAUTIOUS — Longer stalk durations, prefers repositioning over hunting,
+ * CAUTIOUS - Longer stalk durations, prefers repositioning over hunting,
  * high look-exposure tolerance (flees earlier when spotted).
- * BOLD — Shorter observe windows, hunts frequently, tolerates being seen.
- * ERRATIC — Randomised durations, wildly unpredictable action choices.
+ * BOLD - Shorter observe windows, hunts frequently, tolerates being seen.
+ * ERRATIC - Randomised durations, wildly unpredictable action choices.
  */
 public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
-    // ── Night time range ──────────────────────────────────────────────────────
+    // Night time range
     private static final double NIGHT_START = 0.792;
     private static final double NIGHT_END = 0.208;
 
-    // ── Night personality ─────────────────────────────────────────────────────
+    // Night personality
     private enum NightPersonality {
         CAUTIOUS, BOLD, ERRATIC
     }
 
-    // ── STALK base timers (ticks) ─────────────────────────────────────────────
+    // STALK base timers (ticks)
     private static final int APPEARANCE_HOLD_MIN = 80;
     private static final int APPEARANCE_HOLD_MAX = 160;
     private static final int OBSERVE_MIN_BASE = 260;
     private static final int OBSERVE_MAX_BASE = 480;
 
-    // ── Observation range (blocks) ────────────────────────────────────────────
+    // Observation range (blocks)
     private static final int INITIAL_OBSERVE_RANGE_MIN = 38;
     private static final int INITIAL_OBSERVE_RANGE_MAX = 58;
     private static final int RETURN_OBSERVE_RANGE_MIN = 42;
     private static final int RETURN_OBSERVE_RANGE_MAX = 68;
 
-    // ── Look exposure ─────────────────────────────────────────────────────────
+    // Look exposure
     private static final double PLAYER_FOV_HALF = 0.38;
     private static final double PLAYER_PITCH_HALF = 0.52;
     private static final double LOOK_RANGE = 72.0;
     private static final int LOOK_EXPOSURE_LIMIT_BASE = 100;
 
-    // ── REPOSITION ────────────────────────────────────────────────────────────
+    // REPOSITION
     private static final int REPOSITION_FREEZE_MIN = 50;
     private static final int REPOSITION_FREEZE_MAX = 90;
     private static final int NIGHT_REPOSITIONS_MIN = 5;
     private static final int NIGHT_REPOSITIONS_MAX = 9;
 
-    // ── HUNT_APPROACH ─────────────────────────────────────────────────────────
+    // HUNT_APPROACH
     private static final int HUNT_RANGE_MIN = 14;
     private static final int HUNT_RANGE_MAX = 20;
     private static final double HUNT_SPEED_CREEP = 0.12; // blocks/tick: slow, atmospheric
@@ -102,21 +101,21 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final int HUNT_COMMIT_MIN = 160;
     private static final int HUNT_COMMIT_MAX = 260;
 
-    // ── Decision weights ──────────────────────────────────────────────────────
+    // Decision weights
     private static final double BASE_HUNT_CHANCE = 0.45;
     private static final double BASE_ABORT_HUNT_CHANCE = 0.15;
 
-    // ── AMBUSH_SCARE ──────────────────────────────────────────────────────────
-    private static final int AMBUSH_FREEZE_TICKS = 60; // 3 seconds — player sees X17 in their face
+    // AMBUSH_SCARE
+    private static final int AMBUSH_FREEZE_TICKS = 60; // 3 seconds - player sees X17 in their face
     private static final int POST_SCARE_VANISH_MIN = 1200;
     private static final int POST_SCARE_VANISH_MAX = 2400;
 
-    // ── CHASE / RAGE ──────────────────────────────────────────────────────────
+    // CHASE / RAGE
     private static final double RAGE_SPEED = 0.75;
     private static final double RAGE_CATCH_DIST = 2.2;
     private static final int RAGE_COMMIT_TICKS = 400;
 
-    // ── TRUE_VANISH / end-of-night ────────────────────────────────────────────
+    // TRUE_VANISH / end-of-night
     private static final int END_NIGHT_VANISH_MIN = 1200;
     private static final int END_NIGHT_VANISH_MAX = 2400;
     private static final int WAITING_RANGE_MIN = 16;
@@ -125,28 +124,28 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
      * Y coordinate used to hide X17 underground when vanishing (same pattern as
      * ShadowsSystem).
      */
-    private static final double POOL_HIDE_Y = -200.0;
+    private static final double POOL_HIDE_Y = -31.0;
 
-    // ── RETREAT ───────────────────────────────────────────────────────────────
+    // RETREAT
     private static final int RETREAT_COOLDOWN_TICKS = 2400;
 
-    // ── Torch extinguish ──────────────────────────────────────────────────────
+    // Torch extinguish
     /** Chance to extinguish torches on ghost/silent nights (X17 not present). */
     private static final double TORCH_CHANCE_NORMAL = 0.20;
     /** Chance to extinguish torches on spawn nights (X17 is present). */
     private static final double TORCH_CHANCE_SPAWN = 0.50;
 
-    // ── Item stealing ────────────────────────────────────────────────────────
+    // Item stealing
     /** Chance to attempt item theft on ghost/silent nights (X17 not present). */
-    private static final double STEAL_CHANCE_NORMAL = 0.08;
+    private static final double STEAL_CHANCE_NORMAL = 0.20;
     /** Chance to attempt item theft on spawn nights (X17 is present and active). */
-    private static final double STEAL_CHANCE_SPAWN = 0.15;
+    private static final double STEAL_CHANCE_SPAWN = 0.30;
 
-    // ── Singleton guard ───────────────────────────────────────────────────────
+    // Singleton guard
     private static volatile int activeEntityIndex = -1;
     private static volatile long activeWorldHash = 0L;
 
-    // ── Per-night runtime state ───────────────────────────────────────────────
+    // Per-night runtime state
     private int repositionsRemaining = 0;
     private double lastDistToPlayer = Double.MAX_VALUE;
     private NightPersonality personality = NightPersonality.BOLD;
@@ -203,7 +202,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // NIGHT RESET — called by X17EventSystem at the start of every spawn night
+    // NIGHT RESET - called by X17EventSystem at the start of every spawn night
     // =========================================================================
 
     public void resetNightCycles() {
@@ -243,7 +242,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                 p_abortHuntChance = 0.05;
                 break;
             case ERRATIC:
-                // Every value is independently randomised — no pattern to learn
+                // Every value is independently randomised - no pattern to learn
                 p_observeMin = randomBetween(120, 420);
                 p_observeMax = p_observeMin + randomBetween(80, 300);
                 p_lookLimit = randomBetween(50, 200);
@@ -260,7 +259,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
      * other nights -> 20%: rare ambient effect on ghost/silent nights.
      *
      * Separated from resetNightCycles() because that method is only called
-     * on spawn nights — this one must run EVERY night.
+     * on spawn nights - this one must run EVERY night.
      */
     public void resetTorchNight() {
         torchesExtinguishedThisNight = false;
@@ -310,7 +309,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                 boolean stolen = stealSystem.attemptTheft(world, target.transform.getPosition());
                 if (stolen) {
                     stealDoneThisNight = true; // one theft per night, never repeat
-                    log(Level.INFO, "[AI] Theft complete — done for the night.");
+                    log(Level.INFO, "[AI] Theft complete - done for the night.");
                 }
             }
         }
@@ -365,14 +364,14 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
             tickPassiveTimers(ai);
 
-            // ── Daytime ───────────────────────────────────────────────────────
+            // Daytime
             if (isDaytime(store)) {
                 if (ai.getCurrentState() != X17State.DORMANT)
                     forceDormant(ai, x17tf, 200);
                 return;
             }
 
-            // ── Ghost / silent night ──────────────────────────────────────────
+            // Ghost / silent night
             if (!ai.isSpawnAllowedThisNight()) {
                 switch (ai.getCurrentState()) {
                     case DORMANT:
@@ -387,14 +386,14 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                 return;
             }
 
-            // ── Waiting for spawn delay / post-scare cooldown ─────────────────
+            // Waiting for spawn delay / post-scare cooldown
             if (ai.getSpawnCooldownTicks() > 0) {
                 if (ai.getCurrentState() == X17State.TRUE_VANISH)
                     tickTrueVanish(ai);
                 return;
             }
 
-            // ── No players online ─────────────────────────────────────────────
+            // No players online
             TargetData target = selectNearestPlayer(world, store, x17tf.getPosition());
             if (target == null) {
                 if (ai.getCurrentState() != X17State.DORMANT)
@@ -404,7 +403,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
             rememberTarget(ai, target.transform);
 
-            // ── State machine ─────────────────────────────────────────────────
+            // State machine
             switch (ai.getCurrentState()) {
                 case DORMANT:
                     enterStalk(ai, x17tf, world, target);
@@ -441,7 +440,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // STATE: DORMANT → STALK
+    // STATE: DORMANT -> STALK
     // =========================================================================
 
     private void enterStalk(X17AIComponent ai, TransformComponent x17tf,
@@ -482,11 +481,11 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     /**
      * Core horror state. X17 stands still, faces the player, and watches.
-     * X17 NEVER moves toward the player here — all locomotion is teleport.
+     * X17 NEVER moves toward the player here - all locomotion is teleport.
      *
      * Three exits:
-     * 1. Player stares at X17 long enough (look exposure) → REPOSITION
-     * 2. Observe timer expires → pickStalkAction
+     * 1. Player stares at X17 long enough (look exposure) -> REPOSITION
+     * 2. Observe timer expires -> pickStalkAction
      * 3. ERRATIC personality spontaneous reposition
      */
     private void tickStalk(X17AIComponent ai, TransformComponent x17tf,
@@ -507,7 +506,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (ai.getLookExposureTicks() >= p_lookLimit) {
-            log(Level.INFO, "[AI] Spotted — retreating gaze. [" + personality + "]");
+            log(Level.INFO, "[AI] Spotted - retreating gaze. [" + personality + "]");
             ai.setLookExposureTicks(0);
             beginReposition(ai, x17tf, world, target, true);
             return;
@@ -515,7 +514,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
         // Erratic nights: rare spontaneous reposition for no apparent reason.
         if (personality == NightPersonality.ERRATIC && rng.nextDouble() < 0.0008) {
-            log(Level.INFO, "[AI] Erratic impulse — repositioning.");
+            log(Level.INFO, "[AI] Erratic impulse - repositioning.");
             beginReposition(ai, x17tf, world, target, false);
             return;
         }
@@ -528,10 +527,10 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     /**
      * Decision point at the end of an observe window.
      * Outcomes (in order of roll):
-     * 6% — phantom vanish (X17 was never really here)
-     * 12% — snap-reposition (costs extra reposition, very short next observe)
-     * p_huntChance — HUNT_APPROACH
-     * remainder — normal REPOSITION
+     * 6% - phantom vanish (X17 was never really here)
+     * 12% - snap-reposition (costs extra reposition, very short next observe)
+     * p_huntChance - HUNT_APPROACH
+     * remainder - normal REPOSITION
      */
     private void pickStalkAction(X17AIComponent ai, TransformComponent x17tf,
             World world, TargetData target) {
@@ -564,7 +563,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             ai.setActionCooldownTicks(randomBetween(60, 140));
             ai.setAppearanceHoldTicks(randomBetween(20, 40));
             ai.setLookExposureTicks(0);
-            log(Level.INFO, "[AI] Chose: snap-reposition → " + formatPos(x17tf.getPosition()));
+            log(Level.INFO, "[AI] Chose: snap-reposition -> " + formatPos(x17tf.getPosition()));
             return;
         }
 
@@ -583,7 +582,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
         if (repositionsRemaining <= 0) {
             repositionsRemaining = 0;
-            log(Level.INFO, "[AI] Repositions exhausted — ending night presence.");
+            log(Level.INFO, "[AI] Repositions exhausted - ending night presence.");
             beginTrueVanish(ai, x17tf, 1, randomBetween(END_NIGHT_VANISH_MIN, END_NIGHT_VANISH_MAX));
             return;
         }
@@ -594,7 +593,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         ai.setActionCooldownTicks(randomBetween(p_observeMin, p_observeMax));
         ai.setLookExposureTicks(0);
 
-        log(Level.INFO, "[AI] REPOSITION (spotted=" + wasSeen + ") → "
+        log(Level.INFO, "[AI] REPOSITION (spotted=" + wasSeen + ") -> "
                 + formatPos(x17tf.getPosition()) + " | repos=" + repositionsRemaining);
     }
 
@@ -614,7 +613,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     /**
      * Begins a slow creeping approach. X17 teleports to a flanking position
-     * (never directly in front), then creeps at HUNT_SPEED_CREEP — barely
+     * (never directly in front), then creeps at HUNT_SPEED_CREEP - barely
      * perceptible, deeply unsettling. Speed increases slightly when close.
      */
     private void beginHuntApproach(X17AIComponent ai, TransformComponent x17tf,
@@ -630,20 +629,20 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     /**
      * Three exit conditions:
-     * 1. Close enough → AMBUSH_SCARE
-     * 2. Personality abort roll (every 40t) → REPOSITION
-     * 3. Commitment timer expired → REPOSITION
+     * 1. Close enough -> AMBUSH_SCARE
+     * 2. Personality abort roll (every 40t) -> REPOSITION
+     * 3. Commitment timer expired -> REPOSITION
      */
     private void tickHuntApproach(X17AIComponent ai, TransformComponent x17tf, TargetData target) {
 
-        double dist = x17tf.getPosition().distanceTo(target.transform.getPosition());
+        double dist = x17tf.getPosition().distance(target.transform.getPosition());
 
         if (dist <= AMBUSH_TRIGGER_DIST) {
             enterAmbushScare(ai, x17tf, target.transform);
             return;
         }
 
-        // Periodic abort roll — personality-weighted.
+        // Periodic abort roll - personality-weighted.
         if (ai.getHuntCommitmentTicks() % 40 == 0 && rng.nextDouble() < p_abortHuntChance) {
             log(Level.INFO, "[AI] Hunt aborted mid-approach. [" + personality + "]");
             beginReposition(ai, x17tf, null, target, false);
@@ -651,7 +650,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (ai.getHuntCommitmentTicks() <= 0) {
-            log(Level.INFO, "[AI] Hunt timed out — repositioning.");
+            log(Level.INFO, "[AI] Hunt timed out - repositioning.");
             beginReposition(ai, x17tf, null, target, false);
             return;
         }
@@ -683,12 +682,12 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             TransformComponent playerTf) {
         // Teleport right in front of the player, facing them
         Vector3d pPos = playerTf.getPosition();
-        double pYaw = playerTf.getRotation().getYaw();
+        double pYaw = playerTf.getRotation().yaw();
         // Place X17 ~2.5 blocks directly in front of player's face
         Vector3d scarePos = new Vector3d(
-                pPos.getX() + Math.sin(pYaw) * 2.5,
-                pPos.getY(),
-                pPos.getZ() + Math.cos(pYaw) * 2.5);
+                pPos.x() + Math.sin(pYaw) * 2.5,
+                pPos.y(),
+                pPos.z() + Math.cos(pYaw) * 2.5);
         x17tf.teleportPosition(scarePos);
         faceTarget(x17tf, pPos);
         ai.setCurrentState(X17State.AMBUSH_SCARE);
@@ -702,16 +701,16 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     private void tickAmbushScare(X17AIComponent ai, TransformComponent x17tf, TargetData target) {
         if (ai.getActionCooldownTicks() > 0) {
-            // Freeze in place — only rotate to face player, NO movement
+            // Freeze in place - only rotate to face player, NO movement
             faceTarget(x17tf, target.transform.getPosition());
             return;
         }
-        log(Level.INFO, "[AI] Scare done → TRUE_VANISH.");
+        log(Level.INFO, "[AI] Scare done -> TRUE_VANISH.");
         beginTrueVanish(ai, x17tf, 1, randomBetween(POST_SCARE_VANISH_MIN, POST_SCARE_VANISH_MAX));
     }
 
     // =========================================================================
-    // STATE: CHASE (RAGE) — entry ONLY via X17DamageSystem
+    // STATE: CHASE (RAGE) - entry ONLY via X17DamageSystem
     // =========================================================================
 
     public void onX17HitByPlayer(X17AIComponent ai, TransformComponent x17tf,
@@ -728,7 +727,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             ai.resetCombatHitCount();
             ai.setHitWindowTicks(0);
             ai.setFledFromCombat(true);
-            log(Level.INFO, "[AI] Combat escape — too many hits.");
+            log(Level.INFO, "[AI] Combat escape - too many hits.");
             beginTrueVanish(ai, x17tf, 1, X17AIComponent.COMBAT_ESCAPE_COOLDOWN);
             return;
         }
@@ -745,19 +744,19 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void tickRageChase(X17AIComponent ai, TransformComponent x17tf, TargetData target) {
-        double dist = x17tf.getPosition().distanceTo(target.transform.getPosition());
+        double dist = x17tf.getPosition().distance(target.transform.getPosition());
         if (dist <= RAGE_CATCH_DIST) {
-            log(Level.INFO, "[AI] Caught player → RETREAT.");
+            log(Level.INFO, "[AI] Caught player -> RETREAT.");
             enterRetreat(ai, x17tf, target.transform.getPosition());
             return;
         }
         faceTarget(x17tf, target.transform.getPosition());
         moveTowards(x17tf, target.transform.getPosition(), RAGE_SPEED);
-        double distAfter = x17tf.getPosition().distanceTo(target.transform.getPosition());
+        double distAfter = x17tf.getPosition().distance(target.transform.getPosition());
         if (distAfter < lastDistToPlayer - 0.05)
             ai.setHuntCommitmentTicks(RAGE_COMMIT_TICKS);
         if (ai.getHuntCommitmentTicks() <= 0) {
-            log(Level.INFO, "[AI] Rage blocked — RETREAT.");
+            log(Level.INFO, "[AI] Rage blocked - RETREAT.");
             enterRetreat(ai, x17tf, target.transform.getPosition());
         }
         lastDistToPlayer = distAfter;
@@ -776,11 +775,11 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         ai.setLookExposureTicks(0);
         ai.setAppearanceHoldTicks(0);
         ai.setActionCooldownTicks(0);
-        // Instant visual disappearance — teleport underground, invisible to player
+        // Instant visual disappearance - teleport underground, invisible to player
         // Uses same pooling pattern as ShadowsSystem (entity persists for reuse)
         Vector3d lastKnown = new Vector3d(
                 ai.getLastKnownPlayerX(), ai.getLastKnownPlayerY(), ai.getLastKnownPlayerZ());
-        x17tf.teleportPosition(new Vector3d(lastKnown.getX(), POOL_HIDE_Y, lastKnown.getZ()));
+        x17tf.teleportPosition(new Vector3d(lastKnown.x(), POOL_HIDE_Y, lastKnown.z()));
         if (soundSystem != null)
             soundSystem.notifyRageDeactivated();
         log(Level.INFO, "[AI] TRUE_VANISH (void) cooldown=" + spawnCooldownTicks + "t.");
@@ -796,9 +795,9 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             soundSystem.notifyRageDeactivated();
         double angle = rng.nextDouble() * Math.PI * 2.0;
         x17tf.teleportPosition(new Vector3d(
-                awayFrom.getX() + Math.cos(angle) * 60.0,
+                awayFrom.x() + Math.cos(angle) * 60.0,
                 POOL_HIDE_Y,
-                awayFrom.getZ() + Math.sin(angle) * 60.0));
+                awayFrom.z() + Math.sin(angle) * 60.0));
         ai.setCurrentState(X17State.RETREAT);
         ai.setSpawnCooldownTicks(RETREAT_COOLDOWN_TICKS);
         ai.setHuntCommitmentTicks(0);
@@ -868,12 +867,12 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     /**
      * Scores 28 candidate positions and picks the best observation point.
      * Rewards: tree/foliage cover, positions behind the player, preferred range.
-     * X17 prefers to appear behind the player, in trees — hard to be sure of.
+     * X17 prefers to appear behind the player, in trees - hard to be sure of.
      */
     private void teleportToObservationPoint(TransformComponent x17tf, World world,
             TransformComponent playerTf, boolean returning) {
         Vector3d playerPos = playerTf.getPosition();
-        double playerYaw = playerTf.getRotation().getYaw();
+        double playerYaw = playerTf.getRotation().yaw();
         int minRange = returning ? RETURN_OBSERVE_RANGE_MIN : INITIAL_OBSERVE_RANGE_MIN;
         int maxRange = returning ? RETURN_OBSERVE_RANGE_MAX : INITIAL_OBSERVE_RANGE_MAX;
         double preferred = returning ? 54.0 : 46.0;
@@ -887,9 +886,9 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             double angle = center + randomRange(-spread / 2.0, spread / 2.0);
             double distance = randomBetween(minRange, maxRange);
             Vector3d c = new Vector3d(
-                    playerPos.getX() + Math.sin(angle) * distance,
-                    playerPos.getY(),
-                    playerPos.getZ() + Math.cos(angle) * distance);
+                    playerPos.x() + Math.sin(angle) * distance,
+                    playerPos.y(),
+                    playerPos.z() + Math.cos(angle) * distance);
             int score = scoreObservationPoint(world, c)
                     + scoreViewConcealment(playerPos, playerYaw, c)
                     - (int) Math.round(Math.abs(distance - preferred) * 2.0);
@@ -901,7 +900,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
         if (best == null)
             best = new Vector3d(
-                    playerPos.getX() + minRange, playerPos.getY(), playerPos.getZ() + minRange);
+                    playerPos.x() + minRange, playerPos.y(), playerPos.z() + minRange);
 
         x17tf.teleportPosition(best);
         faceTarget(x17tf, playerPos);
@@ -910,9 +909,9 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private int scoreObservationPoint(World world, Vector3d c) {
         if (world == null)
             return 0;
-        int cx = (int) Math.floor(c.getX());
-        int cy = (int) Math.floor(c.getY());
-        int cz = (int) Math.floor(c.getZ());
+        int cx = (int) Math.floor(c.x());
+        int cy = (int) Math.floor(c.y());
+        int cz = (int) Math.floor(c.z());
         int score = 0, trees = 0;
         for (int x = -2; x <= 2; x++)
             for (int y = -1; y <= 3; y++)
@@ -939,14 +938,14 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * Strongly prefers positions behind the player — most unsettling spawn
+     * Strongly prefers positions behind the player - most unsettling spawn
      * location.
      */
     private int scoreViewConcealment(Vector3d playerPos, double playerYaw, Vector3d candidate) {
         double behindYaw = playerYaw + Math.PI;
         double yawDeltaFromBehind = Math.abs(normalizeAngle(
-                Math.atan2(candidate.getX() - playerPos.getX(),
-                        candidate.getZ() - playerPos.getZ()) - behindYaw));
+                Math.atan2(candidate.x() - playerPos.x(),
+                        candidate.z() - playerPos.z()) - behindYaw));
 
         if (yawDeltaFromBehind <= 0.70)
             return 55;
@@ -961,20 +960,20 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     /**
      * Flanking teleport for HUNT_APPROACH.
-     * Spawns to the player's side (~72° offset), never directly in front.
+     * Spawns to the player's side (~72 deg offset), never directly in front.
      * X17 appears in peripheral vision and then creeps into view.
      */
     private void teleportToFlankingPosition(TransformComponent x17tf, TransformComponent playerTf) {
         Vector3d playerPos = playerTf.getPosition();
-        double baseAngle = playerTf.getRotation().getYaw();
+        double baseAngle = playerTf.getRotation().yaw();
         double sideOffset = (rng.nextBoolean() ? 1.0 : -1.0)
-                * (Math.PI * 0.40 + randomRange(-0.30, 0.30)); // ~72° ± 17°
+                * (Math.PI * 0.40 + randomRange(-0.30, 0.30)); // ~72 deg +/- 17 deg
         double angle = baseAngle + sideOffset;
         double distance = randomBetween(HUNT_RANGE_MIN, HUNT_RANGE_MAX);
         x17tf.teleportPosition(new Vector3d(
-                playerPos.getX() + Math.sin(angle) * distance,
-                playerPos.getY(),
-                playerPos.getZ() + Math.cos(angle) * distance));
+                playerPos.x() + Math.sin(angle) * distance,
+                playerPos.y(),
+                playerPos.z() + Math.cos(angle) * distance));
         faceTarget(x17tf, playerPos);
         log(Level.INFO, "[AI] Flank @ " + formatPos(x17tf.getPosition())
                 + " dist=" + String.format("%.1f", distance));
@@ -983,9 +982,9 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private void teleportToWaitingPoint(TransformComponent x17tf, Vector3d playerPos) {
         double angle = rng.nextDouble() * Math.PI * 2.0;
         x17tf.teleportPosition(new Vector3d(
-                playerPos.getX() + Math.cos(angle) * randomBetween(WAITING_RANGE_MIN, WAITING_RANGE_MAX),
-                playerPos.getY(),
-                playerPos.getZ() + Math.sin(angle) * randomBetween(WAITING_RANGE_MIN, WAITING_RANGE_MAX)));
+                playerPos.x() + Math.cos(angle) * randomBetween(WAITING_RANGE_MIN, WAITING_RANGE_MAX),
+                playerPos.y(),
+                playerPos.z() + Math.sin(angle) * randomBetween(WAITING_RANGE_MIN, WAITING_RANGE_MAX)));
     }
 
     // =========================================================================
@@ -994,32 +993,32 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     private void moveTowards(TransformComponent x17tf, Vector3d target, double speed) {
         Vector3d pos = x17tf.getPosition();
-        double dx = target.getX() - pos.getX(), dz = target.getZ() - pos.getZ();
+        double dx = target.x() - pos.x(), dz = target.z() - pos.z();
         double dist = Math.sqrt(dx * dx + dz * dz);
         if (dist <= 0.01)
             return;
         x17tf.setPosition(new Vector3d(
-                pos.getX() + (dx / dist) * speed,
-                target.getY(),
-                pos.getZ() + (dz / dist) * speed));
+                pos.x() + (dx / dist) * speed,
+                target.y(),
+                pos.z() + (dz / dist) * speed));
     }
 
     private void faceTarget(TransformComponent x17tf, Vector3d target) {
         Vector3d pos = x17tf.getPosition();
-        x17tf.setRotation(new Vector3f(0f,
-                (float) Math.atan2(target.getX() - pos.getX(), target.getZ() - pos.getZ()), 0f));
+        x17tf.setRotation(new com.hypixel.hytale.math.vector.Rotation3f(0f,
+                (float) Math.atan2(target.x() - pos.x(), target.z() - pos.z()), 0f));
     }
 
     private boolean isPlayerWatchingX17(TransformComponent playerTf, TransformComponent x17tf) {
         Vector3d pPos = playerTf.getPosition(), xPos = x17tf.getPosition();
-        double dx = xPos.getX() - pPos.getX(), dy = xPos.getY() - pPos.getY(), dz = xPos.getZ() - pPos.getZ();
+        double dx = xPos.x() - pPos.x(), dy = xPos.y() - pPos.y(), dz = xPos.z() - pPos.z();
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (dist < 0.001 || dist > LOOK_RANGE)
             return false;
-        if (Math.abs(normalizeAngle(Math.atan2(dx, dz) - playerTf.getRotation().getYaw())) > PLAYER_FOV_HALF)
+        if (Math.abs(normalizeAngle(Math.atan2(dx, dz) - playerTf.getRotation().yaw())) > PLAYER_FOV_HALF)
             return false;
         return Math.abs(normalizeAngle(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))
-                - playerTf.getRotation().getX())) <= PLAYER_PITCH_HALF;
+                - playerTf.getRotation().pitch())) <= PLAYER_PITCH_HALF;
     }
 
     private TargetData selectNearestPlayer(World world, Store<EntityStore> store, Vector3d referencePos) {
@@ -1040,9 +1039,9 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                 if (referencePos == null) {
                     return new TargetData(p, tf, 0.0);
                 }
-                double dx = tf.getPosition().getX() - referencePos.getX();
-                double dy = tf.getPosition().getY() - referencePos.getY();
-                double dz = tf.getPosition().getZ() - referencePos.getZ();
+                double dx = tf.getPosition().x() - referencePos.x();
+                double dy = tf.getPosition().y() - referencePos.y();
+                double dz = tf.getPosition().z() - referencePos.z();
                 double distSq = dx * dx + dy * dy + dz * dz;
 
                 if (distSq < minDistance) {
@@ -1056,7 +1055,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     private void rememberTarget(X17AIComponent ai, TransformComponent playerTf) {
         Vector3d pos = playerTf.getPosition();
-        ai.setLastKnownPlayerPos(pos.getX(), pos.getY(), pos.getZ());
+        ai.setLastKnownPlayerPos(pos.x(), pos.y(), pos.z());
     }
 
     private boolean isDaytime(Store<EntityStore> store) {
@@ -1096,7 +1095,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     private String formatPos(Vector3d pos) {
-        return String.format("(%.1f,%.1f,%.1f)", pos.getX(), pos.getY(), pos.getZ());
+        return String.format("(%.1f,%.1f,%.1f)", pos.x(), pos.y(), pos.z());
     }
 
     private void log(Level level, String msg) {
@@ -1110,14 +1109,10 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     private static final class TargetData {
-        final Player player;
         final TransformComponent transform;
-        final double distance;
 
         TargetData(Player p, TransformComponent tf, double d) {
-            player = p;
             transform = tf;
-            distance = d;
         }
     }
 }

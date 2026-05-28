@@ -1,0 +1,7 @@
+{
+    "Type": "SingleTrack",
+    "NameTranslationKey": "server.music.Track_X_17_Timehascome.name",
+    "AudioCategory": "AudioCat_Music_In_Game",
+    "Track": "Music/X_17/Timehascome.ogg",
+    "LoopCount": 0
+}

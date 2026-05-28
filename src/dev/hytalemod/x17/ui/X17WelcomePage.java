@@ -20,14 +20,14 @@ import dev.hytalemod.x17.X17Plugin;
 import java.util.logging.Level;
 
 /**
- * X17WelcomePage — v0.3.3
+ * X17WelcomePage - v0.3.3
  *
  * Welcome screen shown to every player on their first connection.
  * Uses the InteractiveCustomUIPage system confirmed in
  * LaunchPadSettingsPage.class.
  *
  * The screen is closed when the player clicks the button (@Close event).
- * Marked as "temporary" — does not reappear after being closed (stored in
+ * Marked as "temporary" - does not reappear after being closed (stored in
  * PlayerData).
  *
  * Confirmed pattern:
@@ -39,10 +39,10 @@ import java.util.logging.Level;
 public class X17WelcomePage
         extends InteractiveCustomUIPage<X17WelcomePage.WelcomeEventData> {
 
-    // ── UI file path (relative to the server's asset pack) ────────────────────
+    // -- UI file path (relative to the server's asset pack) --------------------
     private static final String UI_FILE = "Pages/X17WelcomePage.ui";
 
-    // ── Event data codec ──────────────────────────────────────────────────────
+    // -- Event data codec ------------------------------------------------------
     public static final BuilderCodec<WelcomeEventData> EVENT_CODEC = BuilderCodec
             .builder(WelcomeEventData.class, WelcomeEventData::new)
             .append(new KeyedCodec<>("Action", Codec.STRING),
@@ -50,14 +50,14 @@ public class X17WelcomePage
             .add()
             .build();
 
-    // ── Constructor ──────────────────────────────────────────────────────────
+    // -- Constructor ----------------------------------------------------------
     public X17WelcomePage(PlayerRef playerRef) {
         super(playerRef, CustomPageLifetime.CanDismiss, EVENT_CODEC);
     }
 
-    // ── build: populates the UI with dynamic data ────────────────────────────
+    // -- build: populates the UI with dynamic data ----------------------------
     // Text comes from translations defined in .lang files via {ui.x17.*} keys.
-    // No extra dynamic data needed — everything is i18n on the client side.
+    // No extra dynamic data needed - everything is i18n on the client side.
     @Override
     public void build(Ref<EntityStore> entityRef,
             UICommandBuilder commandBuilder,
@@ -74,7 +74,7 @@ public class X17WelcomePage
                 false);
     }
 
-    // ── handleDataEvent: reacts to button clicks ─────────────────────────────
+    // -- handleDataEvent: reacts to button clicks -----------------------------
     @Override
     public void handleDataEvent(Ref<EntityStore> entityRef,
             Store<EntityStore> store,
@@ -88,7 +88,7 @@ public class X17WelcomePage
         }
     }
 
-    // ── Event data ────────────────────────────────────────────────────────────
+    // -- Event data ------------------------------------------------------------
     /**
      * The only event is the close button (@Close in the .ui).
      * Does not carry additional data.
@@ -100,7 +100,7 @@ public class X17WelcomePage
         }
     }
 
-    // ── Static utility: shows the screen to a player ──────────────────────────
+    // -- Static utility: shows the screen to a player --------------------------
     /**
      * Call this method in X17EventSystem when a new player joins.
      * Example:

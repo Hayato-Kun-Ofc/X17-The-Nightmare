@@ -1,0 +1,7 @@
+{
+    "Type": "SingleTrack",
+    "NameTranslationKey": "server.music.Track_X_17_Ambience_HK.name",
+    "AudioCategory": "AudioCat_Music_In_Game",
+    "Track": "Music/X_17/Ambience_HK.ogg",
+    "LoopCount": 0
+}

@@ -4,9 +4,9 @@ import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.server.core.entity.entities.Player;
+import org.joml.Vector3d;
+
+
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
@@ -38,7 +38,7 @@ public class X17EventSystem {
     private final X17Plugin plugin;
     private final X17AISystem aiSystem;
     private final X17NightScheduler scheduler;
-    private final X17SoundSystem soundSystem;
+    // soundSystem removed - unused field
     private final Random rng = new Random();
 
     private boolean lastKnownNight = false;
@@ -52,10 +52,10 @@ public class X17EventSystem {
     // Prevents synchronizeNightDirective from resetting the budget on every tick.
     private int lastConfiguredNightNumber = -1;
 
-    // ── Multi-store guard ─────────────────────────────────────────────────────
+    // Multi-store guard
     // Hytale's EntityStoreRegistry calls the TickingSystem once per active
     // EntityStore (one per zone/world). X17 should only run its night logic on
-    // the *primary* store — the first one that actually contains players.
+    // the *primary* store - the first one that actually contains players.
     // We latch that store's identity on first encounter and ignore all others.
     //
     // Identity key: System.identityHashCode(store) is sufficient because store
@@ -63,13 +63,13 @@ public class X17EventSystem {
     private int primaryStoreHash = 0;
     private boolean primaryStoreLocked = false;
 
-    // ── World restriction ─────────────────────────────────────────────────────
+    // World restriction
     // X-17 only operates in the main overworld. All instances, dungeons,
     // creative hubs, and alternate worlds are completely ignored.
     // Supports multiple naming conventions used by different server providers:
-    // - "default" → standalone Hytale / local saves
-    // - "default_world" → some server configurations
-    // - "world" → Bisect Hosting and similar providers
+    // - "default" -> standalone Hytale / local saves
+    // - "default_world" -> some server configurations
+    // - "world" -> Bisect Hosting and similar providers
     private static final Set<String> ALLOWED_WORLD_NAMES = new HashSet<>(Arrays.asList(
             "default", "default_world", "world"));
 
@@ -84,7 +84,7 @@ public class X17EventSystem {
         this.plugin = plugin;
         this.aiSystem = aiSystem;
         this.scheduler = scheduler;
-        this.soundSystem = soundSystem;
+        // soundSystem field removed - no longer used
     }
 
     public void registerEvents() {
@@ -117,7 +117,7 @@ public class X17EventSystem {
             return;
         }
 
-        // ── World restriction guard ───────────────────────────────────────────
+        // World restriction guard
         // Only allow X-17 logic in the main overworld.
         // Instances, dungeons, creative hubs, etc. are completely skipped.
         String worldName = resolveWorldName(store);
@@ -125,9 +125,9 @@ public class X17EventSystem {
             return;
         }
 
-        // ── Primary store guard ───────────────────────────────────────────────
+        // Primary store guard
         // Hytale calls this TickingSystem once per active EntityStore (one per
-        // zone/world). We must only run night logic on a single store — the one
+        // zone/world). We must only run night logic on a single store - the one
         // that actually contains players. Lock onto the first store with players;
         // fall back to the very first store seen if the server is empty on boot.
         int storeHash = System.identityHashCode(store);
@@ -141,7 +141,7 @@ public class X17EventSystem {
             }
         }
         if (storeHash != primaryStoreHash) {
-            return; // secondary store — skip all night logic
+            return; // secondary store - skip all night logic
         }
 
         boolean isNight = checkIsNight(store);
@@ -150,7 +150,7 @@ public class X17EventSystem {
         // (SPAWN / GHOST_SOUNDS / SILENT) before applyNightDecision reads it.
         scheduler.tick(isNight, worldName);
 
-        // Night transition — runs exactly once per night thanks to lastKnownNight
+        // Night transition - runs exactly once per night thanks to lastKnownNight
         // AND because secondary stores are rejected above.
         if (isNight && !lastKnownNight) {
             prepareNightDirective();
@@ -183,7 +183,7 @@ public class X17EventSystem {
         }
 
         // Implementation detail: synchronizeSpawnFlags only pushes spawn/ghost flags,
-        // NOT the budget — budget is only set once per night.
+        // NOT the budget - budget is only set once per night.
         synchronizeSpawnFlags(store, isNight);
 
         if (isNight) {
@@ -334,7 +334,7 @@ public class X17EventSystem {
             // Only show welcome screen in the main overworld
             if (!isAllowedWorld(worldName)) {
                 plugin.log(Level.INFO,
-                        "Skipping welcome UI for " + uuid + " — world '" + worldName + "' is not a main world.");
+                        "Skipping welcome UI for " + uuid + " - world '" + worldName + "' is not a main world.");
                 return;
             }
 
@@ -449,7 +449,11 @@ public class X17EventSystem {
         }
 
         Vector3d spawnPos = buildSpawnPositionNear(playerTransform);
-        double spawnDistance = spawnPos.distanceTo(playerTransform.getPosition());
+        double spawnDistance = Math.sqrt(
+            Math.pow(spawnPos.x() - playerTransform.getPosition().x(), 2) +
+            Math.pow(spawnPos.y() - playerTransform.getPosition().y(), 2) +
+            Math.pow(spawnPos.z() - playerTransform.getPosition().z(), 2)
+        );
         int spawnDelay = javaSpawnDoneThisNight ? 1 : currentNightSpawnDelayTicks;
 
         if (spawnJavaX17(store, spawnPos, spawnDelay)) {
@@ -517,7 +521,7 @@ public class X17EventSystem {
                     store,
                     roleIndex,
                     spawnPos,
-                    new Vector3f(0f, 0f, 0f),
+                    new com.hypixel.hytale.math.vector.Rotation3f(0f, 0f, 0f),
                     null,
                     postSpawn);
 
@@ -578,18 +582,18 @@ public class X17EventSystem {
 
     private Vector3d buildSpawnPositionNear(TransformComponent playerTransform) {
         Vector3d playerPos = playerTransform.getPosition();
-        double playerYaw = playerTransform.getRotation().getYaw();
+        double playerYaw = playerTransform.getRotation().yaw();
         // Prefer back/side back spawn to avoid immediate close-range reveal.
         double center = playerYaw + Math.PI;
         double spread = 2.6;
         double angle = center + randomRange(-spread / 2.0, spread / 2.0);
         double distance = randomRange(42.0, 64.0);
-        // FIX v0.3.2: was Math.cos/Math.sin (X/Z) — flipped 90° vs rest of mod.
-        // Convention throughout is sin(yaw)→X, cos(yaw)→Z (matches faceTarget atan2(dx,dz)).
+        // FIX v0.3.2: was Math.cos/Math.sin (X/Z) - flipped 90 deg vs rest of mod.
+        // Convention throughout is sin(yaw) -> X, cos(yaw) -> Z (matches faceTarget atan2(dx,dz)).
         return new Vector3d(
-                playerPos.getX() + Math.sin(angle) * distance,
-                playerPos.getY(),
-                playerPos.getZ() + Math.cos(angle) * distance);
+                playerPos.x() + Math.sin(angle) * distance,
+                playerPos.y(),
+                playerPos.z() + Math.cos(angle) * distance);
     }
 
     private double randomRange(double min, double max) {
@@ -612,6 +616,7 @@ public class X17EventSystem {
     }
 
     private String formatPos(Vector3d pos) {
-        return String.format("(%.1f, %.1f, %.1f)", pos.getX(), pos.getY(), pos.getZ());
+        return String.format("(%.1f, %.1f, %.1f)", pos.x(), pos.y(), pos.z());
     }
 }
+
