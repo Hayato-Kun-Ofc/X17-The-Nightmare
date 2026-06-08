@@ -20,7 +20,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShadowsSystem - v0.3.3
+ * X17ShadowsSystem - v0.3.4
  *
  * Rare paranormal event for ghost/silent nights (when X17 is NOT actively
  * spawned).
@@ -81,7 +81,7 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
     private static final int SHADOW_ACTIVATION_DELAY = 2000;
 
     /** Y coordinate used to hide "despawned" shadow entities underground. */
-    private static final double POOL_HIDE_Y = -31.0;
+    private static final double POOL_HIDE_Y = 2.0;
 
     // FOV detection constants (mirrors X17AISystem)
 

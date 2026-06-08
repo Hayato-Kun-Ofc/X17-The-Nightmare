@@ -7,7 +7,7 @@
       "Probability": 5
     }
   ],
-  "Volume": 10,
+  "Volume": 7.0,
   "PreventSoundInterruption": true,
   "AudioCategory": "AudioCat_NPC_X_17",
   "Parent": "SFX_Attn_Loud",

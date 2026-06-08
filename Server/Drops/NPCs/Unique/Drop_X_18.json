@@ -1,0 +1,10 @@
+{
+    "Container": {
+        "Type": "Single",
+        "Item": {
+            "ItemId": "Ingredient_Void_Essence",
+            "QuantityMin": 50,
+            "QuantityMax": 75
+        }
+    }
+}

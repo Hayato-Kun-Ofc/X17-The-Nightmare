@@ -10,9 +10,15 @@ items.Deco_X_17_Trophy.name=Голова X-17
 items.Deco_X_17_Trophy.description=Жуткий трофей кошмарной сущности, скрывающейся в тумане.
 
 customUI.Pages.X17WelcomePage.title=Добро пожаловать в кошмар
-customUI.Pages.X17WelcomePage.subtitle=X-17 Кошмар — v0.3.3
+customUI.Pages.X17WelcomePage.subtitle=X-17 Кошмар — v0.3.4
 customUI.Pages.X17WelcomePage.body=Выживай в этом мире, как всегда.\nСтрой укрытие. Собирай ресурсы. Зажигай огни.\n \nНо будь осторожен — ночи и пещеры больше не будут прежними.\nЧто-то таится в тумане. Что-то наблюдает.\n \nЗа тобой следят.
 customUI.Pages.X17WelcomePage.tipTitle=Советы по выживанию
 customUI.Pages.X17WelcomePage.tip1= > Строй стены и крышу, двери и окна могут быть единственным предупреждением.
 customUI.Pages.X17WelcomePage.tip2= > Тишина ничего не значит. Звук ничего не значит. Не доверяй ничему.
 customUI.Pages.X17WelcomePage.button=Понял. Начать.
+npcRoles.X_18.name=X-18
+npcRoles.X_18.description=X-18 The Cave Curse
+npcRoles.X_18.lore=A mysterious and corrupt being that curses those who wander too long in mines
+items.X_18.name=X-18 The Cave Curse
+items.X_18.description=A mysterious and corrupt entity that emerges from deep caves
+items.X_18.lore=X-18 is a corrupted mystery beneath the stone, a curse whispered through mines by those who stayed underground too long. It waits in unseen corners, stalks from the dark, then charges without warning.

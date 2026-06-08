@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.component.X17AIComponent;
 import dev.hytalemod.x17.component.X17PlayerComponent;
+import dev.hytalemod.x17.component.X18AIComponent;
 import dev.hytalemod.x17.scheduler.X17NightScheduler;
 import dev.hytalemod.x17.system.X17AISystem;
 import dev.hytalemod.x17.system.X17DamageSystem;
@@ -21,6 +22,8 @@ import dev.hytalemod.x17.system.X17TorchExtinguishSystem;
 import dev.hytalemod.x17.system.X17ItemStealSystem;
 import dev.hytalemod.x17.system.X17ShadowsSystem;
 import dev.hytalemod.x17.system.X17ShinyTrapSystem;
+import dev.hytalemod.x17.system.X18AISystem;
+import dev.hytalemod.x17.system.X18CaveSpawnSystem;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -29,13 +32,14 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.3.3
+ * X17Plugin - v0.3.4
  */
 public class X17Plugin extends JavaPlugin {
 
     private static X17Plugin instance;
     private PrintWriter x17LogWriter;
     private ComponentType<EntityStore, X17AIComponent> aiComponentType;
+    private ComponentType<EntityStore, X18AIComponent> x18AIComponentType;
     private ComponentType<EntityStore, X17PlayerComponent> playerComponentType;
 
     public X17Plugin(JavaPluginInit init) {
@@ -52,13 +56,18 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.3 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.4 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
                 X17AIComponent.class, "x17:ai_controller", X17AIComponent.CODEC);
         X17AIComponent.init(aiComponentType);
         log(Level.INFO, "Registered: x17:ai_controller");
+
+        x18AIComponentType = getEntityStoreRegistry().registerComponent(
+                X18AIComponent.class, "x17:x18_ai_controller", X18AIComponent.CODEC);
+        X18AIComponent.init(x18AIComponentType);
+        log(Level.INFO, "Registered: x17:x18_ai_controller");
 
         playerComponentType = getEntityStoreRegistry().registerComponent(
                 X17PlayerComponent.class, "x17:player_state", X17PlayerComponent.CODEC);
@@ -85,6 +94,8 @@ public class X17Plugin extends JavaPlugin {
 
         try {
             getEntityStoreRegistry().registerSystem(aiSystem);
+            getEntityStoreRegistry().registerSystem(new X18AISystem());
+            getEntityStoreRegistry().registerSystem(new X18CaveSpawnSystem());
             getEntityStoreRegistry().registerSystem(new X17DamageSystem(aiSystem));
             getEntityStoreRegistry().registerSystem(soundSystem);
             getEntityStoreRegistry().registerSystem(shadowsSystem);
@@ -92,7 +103,7 @@ public class X17Plugin extends JavaPlugin {
             // FIX v0.3.2: TorchExtinguishSystem and ItemStealSystem are utility
             // classes, not TickingSystems - removed from this log line.
             log(Level.INFO,
-                    "Registered: X17AISystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
+                    "Registered: X17AISystem, X18AISystem, X18CaveSpawnSystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }
@@ -153,6 +164,8 @@ public class X17Plugin extends JavaPlugin {
 
         log(Level.INFO, "=== All systems online. X-17 is watching. ===");
         log(Level.INFO, "    N1:30%  N2:45%  N3:55%  N4:60%  N5+:65%");
+        log(Level.INFO, "=== X-18 JUMPSCARE SPAWNER ACTIVE ===");
+        log(Level.INFO, "    X-18 will spawn in caves and assault players!");
     }
 
     @Override
@@ -179,10 +192,26 @@ public class X17Plugin extends JavaPlugin {
     }
 
     public void log(Level level, String message) {
-        System.out.println("[X-17 " + level.getName() + "] " + message);
+        // X_18 messages go exclusively to the file log — never to the main client log.
+        // Identified by the prefixes used in X18AISystem, X18CaveSpawnSystem, and
+        // X18BlackScreenPage: "[AI]", "[Spawner]", "[X18-CaveSpawn]".
+        boolean isX18Message = message != null && (message.contains("[AI]") ||
+                message.contains("[Spawner]") ||
+                message.contains("[X18-CaveSpawn]"));
+
+        if (!isX18Message && !isQuietMainLogMessage(level, message)) {
+            System.out.println("[X-17 " + level.getName() + "] " + message);
+        }
         if (x17LogWriter != null) {
             x17LogWriter.println("[" + level.getName() + "] " + message);
             x17LogWriter.flush();
         }
+    }
+
+    private boolean isQuietMainLogMessage(Level level, String message) {
+        if (level.intValue() > Level.INFO.intValue() || message == null) {
+            return false;
+        }
+        return message.contains("[Steal] No accessible chests with loot found.");
     }
 }

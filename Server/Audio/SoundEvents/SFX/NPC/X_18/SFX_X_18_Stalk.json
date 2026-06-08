@@ -1,0 +1,22 @@
+{
+    "Layers": [
+        {
+            "Files": [
+                "Sounds/NPC/X_18/HeWatchesU.ogg"
+            ],
+            "RandomSettings": {
+                "MinVolume": 0,
+                "MaxVolume": 1,
+                "MinPitch": -1.0,
+                "MaxPitch": 0.5
+            },
+            "Probability": 30
+        }
+    ],
+    "Volume": 4.0,
+    "PreventSoundInterruption": true,
+    "AudioCategory": "AudioCat_NPC_X_17",
+    "Parent": "SFX_Attn_Loud",
+    "MaxDistance": 100,
+    "StartAttenuationDistance": 10
+}

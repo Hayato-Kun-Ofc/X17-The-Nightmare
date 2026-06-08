@@ -1,0 +1,6 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+  Background: #000000(1.0); // Opaque black overlay
+}

@@ -1,0 +1,109 @@
+{
+  "States": {
+    "Idle": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Idle.blockyanim"
+        }
+      ]
+    },
+    "Walk": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Walk.blockyanim"
+        }
+      ]
+    },
+    "WalkBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Walk_Backward.blockyanim"
+        }
+      ]
+    },
+    "Run": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Run.blockyanim"
+        }
+      ]
+    },
+    "RunBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Run_Backward.blockyanim"
+        }
+      ]
+    },
+    "Sprint": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Sprint.blockyanim"
+        }
+      ]
+    },
+    "Jump": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Jump.blockyanim"
+        }
+      ]
+    },
+    "Fall": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Fall.blockyanim"
+        }
+      ]
+    },
+    "Hurt": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Damage/Hurt.blockyanim"
+        }
+      ]
+    },
+    "Death": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Damage/Hurt2.blockyanim"
+        }
+      ]
+    },
+    "Spawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Spawn.blockyanim"
+        }
+      ]
+    },
+    "Despawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Despawn.blockyanim"
+        }
+      ]
+    },
+    "Alerted": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Alerted.blockyanim"
+        }
+      ]
+    },
+    "ChargeAttack": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Charged_Attack.blockyanim"
+        }
+      ]
+    },
+    "Grab": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_18/Animations/Default/Grab.blockyanim"
+        }
+      ]
+    }
+  }
+}

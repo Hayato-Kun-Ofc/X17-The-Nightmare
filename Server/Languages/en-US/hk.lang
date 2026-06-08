@@ -10,7 +10,7 @@ items.Deco_X_17_Trophy.name=X-17 Head
 items.Deco_X_17_Trophy.description=A gruesome trophy of the nightmare entity that stalks the fog, his energy is still palpable.
 
 customUI.Pages.X17WelcomePage.title=Welcome to the Nightmare
-customUI.Pages.X17WelcomePage.subtitle=X-17 The Nightmare — v0.3.3
+customUI.Pages.X17WelcomePage.subtitle=X-17 The Nightmare — v0.3.4
 customUI.Pages.X17WelcomePage.body=Survive this world like you always have.\nBuild your shelter. Gather your resources. Light your fires.\n \nBut be warned — nights and caves will never be the same again.\nSomething lurks in the fog. Something that watches.\n \nYou are being watched.
 customUI.Pages.X17WelcomePage.tipTitle=Survival Tips
 customUI.Pages.X17WelcomePage.tip1= > Build walls and a roof, doors and windows may be your only warning.
@@ -18,3 +18,9 @@ customUI.Pages.X17WelcomePage.tip2= > Silence means nothing. Noise means nothing
 customUI.Pages.X17WelcomePage.button=I understand. Begin.
 
 memories.categories.Unique.title = Unique
+npcRoles.X_18.name=X-18
+npcRoles.X_18.description=X-18 The Cave Curse
+npcRoles.X_18.lore=A mysterious and corrupt being that curses those who wander too long in mines
+items.X_18.name=X-18 The Cave Curse
+items.X_18.description=A mysterious and corrupt entity that emerges from deep caves
+items.X_18.lore=X-18 is a corrupted mystery beneath the stone, a curse whispered through mines by those who stayed underground too long. It waits in unseen corners, stalks from the dark, then charges without warning.

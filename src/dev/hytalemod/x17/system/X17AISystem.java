@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.3.3
+ * X17AISystem - v0.3.4
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -124,7 +124,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
      * Y coordinate used to hide X17 underground when vanishing (same pattern as
      * ShadowsSystem).
      */
-    private static final double POOL_HIDE_Y = -31.0;
+    private static final double POOL_HIDE_Y = 2.0;
 
     // RETREAT
     private static final int RETREAT_COOLDOWN_TICKS = 2400;

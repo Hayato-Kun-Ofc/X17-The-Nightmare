@@ -16,7 +16,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17NightScheduler - v0.3.3
+ * X17NightScheduler - v0.3.4
  *
  * Decides per-night behaviour (SPAWN / GHOST_SOUNDS / SILENT) and persists
  * state across server restarts so the night counter never resets.
