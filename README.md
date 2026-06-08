@@ -26,7 +26,7 @@ We have provided an extensive, multi-chapter Wiki explaining every detail of the
 **[Read the Full Documentation Wiki Here](https://wiki.hytalemodding.dev/mod/x17-the-nightmare/introduction)**
 
 ### Quick Start
-1. Ensure you are running Hytale Server version `2026.02.19-1a311a592` or compatible.
+1. Ensure you are running Hytale Server version `0.5` or compatible.
 2. Place the `X17NIGHTMARE` folder into your `UserData/Mods/` directory.
 3. Start your world. 
 4. The mod will silently initialize. Use `/time set night` to begin testing the AI's schedule.
