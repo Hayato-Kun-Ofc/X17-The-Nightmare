@@ -1,8 +1,10 @@
 package dev.hytalemod.x17.system;
 
 import org.joml.Vector3d;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
 import dev.hytalemod.x17.X17Plugin;
 
 import java.util.ArrayList;
@@ -10,21 +12,23 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
- * X17TorchExtinguishSystem - v0.3.4
+ * X17TorchExtinguishSystem - v0.3.5
  *
  * Extinguishes all torch-type blocks within a configurable AOE radius around a
  * given world position. Triggered by X17AISystem whenever X17 enters its first
  * STALK observation for a given night (the "stalk" moment the player should
  * feel X17's presence through the dying light).
  *
- * BLOCK API CHAIN (safe, no silent-fail):
+ * BLOCK API CHAIN (safe, no silent-fail) - v0.3.5:
  * ChunkUtil.indexChunkFromBlock(x, z)
- * -> world.getNonTickingChunk(index) -> BlockAccessor
+ * -> world.getChunkIfLoaded(index) -> BlockAccessor
  * -> accessor.getBlockType(x, y, z) -> BlockType (read)
  * -> accessor.setBlockInteractionState(x, y, z, blockType, "Off", false)
  *
- * Calling world.getBlockType / world.setBlock directly compiles but silently
- * fails at runtime - always go through the chunk accessor.
+ * Calling world.getBlockType / world.setBlockInteractionState directly
+ * compiles but silently fails at runtime - always go through the chunk
+ * accessor. (Fix #3 in v0.3.5: the implementation now actually follows
+ * this chain instead of calling the World overloads directly.)
  *
  * TORCH BLOCK IDs (Hytale naming):
  * All known torch variants that carry an interaction state "Off" / "On"
@@ -33,9 +37,8 @@ import java.util.logging.Level;
  * the same normalisation used across the rest of the mod.
  *
  * AOE:
- * Default radius is 20 blocks (manhattan-style cube sweep for performance).
- * The vertical scan is kept narrow (-2 ... +4 relative to the centre Y) to
- * avoid wasting time on underground or sky blocks.
+ * Uses the original broad scan from the backup: radius 35 blocks and
+ * vertical range -15 ... +25 relative to the centre Y.
  */
 public class X17TorchExtinguishSystem {
 
@@ -138,27 +141,48 @@ public class X17TorchExtinguishSystem {
 
         int extinguished = 0;
 
+        // FIX #3: the class comment (lines 20-27) explicitly warns that calling
+        // world.getBlockType / world.setBlockInteractionState directly compiles
+        // but silently fails at runtime. We must go through the chunk BlockAccessor.
+        // The 6-arg overload on BlockAccessor is the one that actually writes the
+        // state; the World overload is a no-op for torch interaction states.
+        //
+        // Restructure: resolve the BlockAccessor ONCE per (x, z) chunk column,
+        // then iterate Y inside it. This is also a major perf win because
+        // chunk resolution is the expensive part.
         for (int x = -AOE_RADIUS; x <= AOE_RADIUS; x++) {
             for (int z = -AOE_RADIUS; z <= AOE_RADIUS; z++) {
-                for (int y = -SCAN_Y_DOWN; y <= SCAN_Y_UP; y++) {
-                    int bx = cx + x;
-                    int by = cy + y;
-                    int bz = cz + z;
+                int bx = cx + x;
+                int bz = cz + z;
 
+                BlockAccessor accessor;
+                try {
+                    accessor = world.getChunkIfLoaded(
+                            ChunkUtil.indexChunkFromBlock(bx, bz));
+                } catch (Exception e) {
+                    // Chunk not loaded - skip this column.
+                    continue;
+                }
+                if (accessor == null) {
+                    continue;
+                }
+
+                for (int y = -SCAN_Y_DOWN; y <= SCAN_Y_UP; y++) {
+                    int by = cy + y;
                     try {
-                        BlockType bt = world.getBlockType(bx, by, bz);
-                        if (bt == null)
+                        BlockType bt = accessor.getBlockType(bx, by, bz);
+                        if (bt == null) {
                             continue;
+                        }
 
                         String normId = normalizeBlockId(bt.getId());
-                        if (!isTorchBlock(normId))
+                        if (!isTorchBlock(normId)) {
                             continue;
+                        }
 
-                        // Toggle the block to its "Off" interaction state.
-                        world.setBlockInteractionState(new org.joml.Vector3i(bx, by, bz), bt,
-                                STATE_OFF);
+                        // 6-arg overload on BlockAccessor - actually writes state.
+                        accessor.setBlockInteractionState(bx, by, bz, bt, STATE_OFF, false);
                         extinguished++;
-
                     } catch (Exception e) {
                         log(Level.INFO, "[Torch] setBlockInteractionState failed at ("
                                 + bx + "," + by + "," + bz + "): " + e.getMessage());

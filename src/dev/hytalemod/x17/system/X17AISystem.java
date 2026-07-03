@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.3.4
+ * X17AISystem - v0.3.5
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -142,8 +142,13 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final double STEAL_CHANCE_SPAWN = 0.30;
 
     // Singleton guard
-    private static volatile int activeEntityIndex = -1;
-    private static volatile long activeWorldHash = 0L;
+    // FIX #11: replaced static volatile int/long pair with a per-world
+    // ConcurrentHashMap. The previous static fields were shared across all
+    // worlds, so on a multi-world server world B's tick overwrote world A's
+    // singleton lock, causing world A's X-17 to be forced into TRUE_VANISH.
+    // The map keyed by world name gives each world its own lock entry.
+    private static final java.util.concurrent.ConcurrentHashMap<String, Integer> activeEntityByWorld =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     // Per-night runtime state
     private int repositionsRemaining = 0;
@@ -415,7 +420,9 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                     tickReposition(ai, x17tf, target);
                     break;
                 case HUNT_APPROACH:
-                    tickHuntApproach(ai, x17tf, target);
+                    // FIX #9: thread the world through so beginReposition gets
+                    // a non-null World for teleportToObservationPoint scoring.
+                    tickHuntApproach(ai, x17tf, world, target);
                     break;
                 case AMBUSH_SCARE:
                     tickAmbushScare(ai, x17tf, target);
@@ -434,8 +441,12 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                     break;
             }
         } catch (Exception e) {
-            log(Level.SEVERE, "[AI] Exception in tick: " + e.getMessage());
-            e.printStackTrace();
+            // FIX #21: route through logException so the trace lands in the
+            // mod's log file instead of stderr.
+            if (X17Plugin.getInstance() != null) {
+                X17Plugin.getInstance().logException(Level.SEVERE,
+                        "[AI] Exception in tick", e);
+            }
         }
     }
 
@@ -633,7 +644,8 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
      * 2. Personality abort roll (every 40t) -> REPOSITION
      * 3. Commitment timer expired -> REPOSITION
      */
-    private void tickHuntApproach(X17AIComponent ai, TransformComponent x17tf, TargetData target) {
+    private void tickHuntApproach(X17AIComponent ai, TransformComponent x17tf,
+            World world, TargetData target) {
 
         double dist = x17tf.getPosition().distance(target.transform.getPosition());
 
@@ -645,13 +657,16 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         // Periodic abort roll - personality-weighted.
         if (ai.getHuntCommitmentTicks() % 40 == 0 && rng.nextDouble() < p_abortHuntChance) {
             log(Level.INFO, "[AI] Hunt aborted mid-approach. [" + personality + "]");
-            beginReposition(ai, x17tf, null, target, false);
+            // FIX #9: pass world through (was null) so teleportToObservationPoint
+            // can score tree/foliage cover instead of returning 0 for every
+            // candidate (which produced random open-field spawns).
+            beginReposition(ai, x17tf, world, target, false);
             return;
         }
 
         if (ai.getHuntCommitmentTicks() <= 0) {
             log(Level.INFO, "[AI] Hunt timed out - repositioning.");
-            beginReposition(ai, x17tf, null, target, false);
+            beginReposition(ai, x17tf, world, target, false);
             return;
         }
 
@@ -661,7 +676,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             if (ai.getLookExposureTicks() >= p_lookLimit) {
                 log(Level.INFO, "[AI] Spotted during hunt! Retreating gaze. [" + personality + "]");
                 ai.setLookExposureTicks(0);
-                beginReposition(ai, x17tf, null, target, true);
+                beginReposition(ai, x17tf, world, target, true);
                 return;
             }
         } else {
@@ -847,17 +862,28 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     // =========================================================================
 
     private boolean acquireSingleton(World world, int entityIndex, X17AIComponent ai) {
-        long hash = (long) world.getName().hashCode();
-        if (activeWorldHash != hash || activeEntityIndex < 0) {
-            activeWorldHash = hash;
-            activeEntityIndex = entityIndex;
+        // FIX #11: per-world singleton via ConcurrentHashMap.
+        String worldName = world.getName();
+        Integer current = activeEntityByWorld.putIfAbsent(worldName, entityIndex);
+        if (current == null) {
+            // We were the first to register for this world.
             return true;
         }
-        if (activeEntityIndex == entityIndex)
+        if (current == entityIndex) {
             return true;
+        }
+
+        // Another entity in this world is the active singleton - vanish.
         ai.setCurrentState(X17State.TRUE_VANISH);
         ai.setVanishTimerTicks(1);
         return false;
+    }
+
+    /** Called when the X-17 entity is removed or invalidated to release the singleton. */
+    private void releaseSingleton(World world) {
+        if (world != null && world.getName() != null) {
+            activeEntityByWorld.remove(world.getName());
+        }
     }
 
     // =========================================================================
@@ -913,27 +939,51 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         int cy = (int) Math.floor(c.y());
         int cz = (int) Math.floor(c.z());
         int score = 0, trees = 0;
-        for (int x = -2; x <= 2; x++)
-            for (int y = -1; y <= 3; y++)
+
+        // FIX #19: previously allocated ~2800 strings per spawn via
+        // normalizeBlockId on every block. Now uses the raw ID lowercased
+        // (sufficient for substring match), skips the namespace prefix
+        // only if present, and early-exits once trees >= 12 (the cap
+        // for the bonus anyway).
+        for (int x = -2; x <= 2; x++) {
+            for (int y = -1; y <= 3; y++) {
                 for (int z = -2; z <= 2; z++) {
                     try {
                         BlockType bt = world.getBlockType(cx + x, cy + y, cz + z);
-                        if (bt == null)
+                        if (bt == null) {
                             continue;
-                        String id = normalizeBlockId(bt.getId());
+                        }
+                        String raw = bt.getId();
+                        if (raw == null) {
+                            continue;
+                        }
+                        String id = raw.toLowerCase();
+                        int colon = id.indexOf(':');
+                        if (colon >= 0) {
+                            id = id.substring(colon + 1);
+                        }
+
                         if (id.contains("leaves") || id.contains("log") || id.contains("tree")
                                 || id.contains("bark") || id.contains("wood")) {
                             score += 10;
                             trees++;
-                        } else if (id.contains("grass") || id.contains("dirt") || id.contains("stone"))
+                            if (trees >= 12) {
+                                // Early-exit: cap reached, no point scanning more.
+                                return score + Math.min(12, trees * 2);
+                            }
+                        } else if (id.contains("grass") || id.contains("dirt") || id.contains("stone")) {
                             score++;
+                        }
                     } catch (Exception ignored) {
                     }
                 }
-        if (trees == 0)
+            }
+        }
+        if (trees == 0) {
             score -= 45;
-        else
+        } else {
             score += Math.min(12, trees * 2);
+        }
         return score;
     }
 
@@ -1004,9 +1054,14 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void faceTarget(TransformComponent x17tf, Vector3d target) {
+        // FIX #26: delegate to the shared FacingUtil helper so X-17 and X-18
+        // share a single source of truth for the yaw convention. X-17 model
+        // faces +Z by default, so orientOffset = 0.0 (was previously a
+        // raw atan2 call that matched this convention but was duplicated
+        // from X18AISystem.faceToward which uses +PI).
         Vector3d pos = x17tf.getPosition();
-        x17tf.setRotation(new com.hypixel.hytale.math.vector.Rotation3f(0f,
-                (float) Math.atan2(target.x() - pos.x(), target.z() - pos.z()), 0f));
+        x17tf.setRotation(
+                dev.hytalemod.x17.FacingUtil.rotationToFace(pos, target, 0.0));
     }
 
     private boolean isPlayerWatchingX17(TransformComponent playerTf, TransformComponent x17tf) {

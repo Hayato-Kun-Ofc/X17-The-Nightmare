@@ -23,7 +23,7 @@ import java.util.logging.Level;
  * Creates the first X_18 entity with the same Java NPCPlugin pattern used by
  * X_17. After creation, X18AISystem pools/reuses that entity.
  *
- * FIXES applied (vs v0.3.3):
+ * FIXES applied (vs v0.3.5):
  *  FIX-A  Null guard on X18AIComponent.getComponentType() before calling
  *         store.getEntityCountFor(). If the component type is not yet
  *         initialised (should not happen in normal flow, but defensively safe),

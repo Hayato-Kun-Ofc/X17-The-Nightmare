@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.3.4
+ * X17EventSystem - v0.3.5
  */
 public class X17EventSystem {
 
@@ -322,8 +322,16 @@ public class X17EventSystem {
         try {
             plugin.log(Level.INFO, "Player ready. Checking welcome UI...");
 
-            Store<EntityStore> store = event.getPlayerRef().getStore();
-            PlayerRef playerRef = store.getComponent(event.getPlayerRef(), PlayerRef.getComponentType());
+            // FIX #2: PlayerReadyEvent.getPlayerRef() returns the entity Ref
+            // (com.hypixel.hytale.component.Ref), NOT a PlayerRef component.
+            // The previous code called event.getPlayerRef().getStore() and then
+            // passed the same Ref to store.getComponent(..., PlayerRef.getComponentType())
+            // which returned null because the entity ref is not itself a PlayerRef.
+            // The correct flow is: entity ref -> getStore() -> look up the
+            // PlayerRef component on that entity.
+            Ref<EntityStore> entityRef = event.getPlayerRef();
+            Store<EntityStore> store = entityRef.getStore();
+            PlayerRef playerRef = store.getComponent(entityRef, PlayerRef.getComponentType());
             if (playerRef == null) {
                 plugin.log(Level.WARNING, "PlayerRef component is null for ready player. Skipping welcome UI.");
                 return;
@@ -361,8 +369,8 @@ public class X17EventSystem {
             plugin.log(Level.INFO, "Showing welcome UI to " + uuid + " in: " + worldName);
             X17WelcomePage.showTo(playerRef, store);
         } catch (Exception e) {
-            plugin.log(Level.SEVERE, "Error in PlayerReady: " + e.getMessage());
-            e.printStackTrace();
+            // FIX #21: route through logException instead of printStackTrace.
+            plugin.logException(Level.SEVERE, "Error in PlayerReady", e);
         }
     }
 
@@ -531,7 +539,10 @@ public class X17EventSystem {
             }
             return true;
         } catch (Exception e) {
-            plugin.log(Level.WARNING, "[Scheduler] Failed to spawn X17 via Java: " + e.getMessage());
+            // FIX #4: unwrap InvocationTargetException so the real cause is logged.
+            Throwable cause = X17Plugin.unwrapReflective(e);
+            plugin.logException(Level.WARNING,
+                    "[Scheduler] Failed to spawn X17 via Java", cause);
             return false;
         }
     }
@@ -588,7 +599,7 @@ public class X17EventSystem {
         double spread = 2.6;
         double angle = center + randomRange(-spread / 2.0, spread / 2.0);
         double distance = randomRange(42.0, 64.0);
-        // FIX v0.3.2: was Math.cos/Math.sin (X/Z) - flipped 90 deg vs rest of mod.
+        // FIX v0.3.5: was Math.cos/Math.sin (X/Z) - flipped 90 deg vs rest of mod.
         // Convention throughout is sin(yaw) -> X, cos(yaw) -> Z (matches faceTarget atan2(dx,dz)).
         return new Vector3d(
                 playerPos.x() + Math.sin(angle) * distance,

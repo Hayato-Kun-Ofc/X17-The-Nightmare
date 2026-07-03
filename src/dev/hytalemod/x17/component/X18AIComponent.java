@@ -118,7 +118,7 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /**
      * Maximum Y offset from the player for a valid lurk position.
-     * v0.3.4: changed from 8 (deep below) to 3 (same level ± a few blocks)
+     * v0.3.5: changed from 8 (deep below) to 3 (same level ± a few blocks)
      * so the lurker spawns in the same cave channels as the player.
      */
     public static final int LURK_Y_TOLERANCE = 3;
@@ -137,13 +137,13 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /**
      * Ticks of eye-contact to trigger vanish during LURK — 5 s.
-     * v0.3.4: increased to 100 so the player actually registers seeing it.
+     * v0.3.5: increased to 100 so the player actually registers seeing it.
      */
     public static final int LURK_EXPOSURE_TICKS = 100;
 
     /**
      * Ticks of eye-contact to trigger vanish during STALK — 5 s.
-     * v0.3.4: increased to 100 so the player gets a brief glimpse.
+     * v0.3.5: increased to 100 so the player gets a brief glimpse.
      */
     public static final int STALK_EXPOSURE_TICKS = 100;
 
@@ -152,7 +152,7 @@ public class X18AIComponent implements Component<EntityStore> {
      * more than STILLNESS_THRESHOLD blocks/tick for STILLNESS_TICKS_REQUIRED
      * consecutive ticks (5 s of standing mostly still).
      *
-     * v0.3.4: relaxed thresholds so X_18 can re-appear even when the player
+     * v0.3.5: relaxed thresholds so X_18 can re-appear even when the player
      * is slowly moving (e.g. looking around after a charge attack).
      */
     public static final double STILLNESS_THRESHOLD = 0.10;
@@ -503,7 +503,7 @@ public class X18AIComponent implements Component<EntityStore> {
     /**
      * Resets ALL session-scoped state when the player leaves and re-enters the
      * cave.
-     * v0.3.4: now resets appearanceCount, stillnessTicks, and ignoreStillnessOnce
+     * v0.3.5: now resets appearanceCount, stillnessTicks, and ignoreStillnessOnce
      * so a fresh cave entry gets the full experience from scratch.
      */
     public void resetSession() {
@@ -618,7 +618,7 @@ public class X18AIComponent implements Component<EntityStore> {
     // The field is no longer meaningful (hits-before-vanish logic was removed),
     // but the stub keeps the spawn system compiling without modification.
     public void setHitsTaken(int v) {
-        /* no-op — field removed in v0.3.4 */ }
+        /* no-op — field removed in v0.3.5 */ }
 
     @Override
     public Component<EntityStore> clone() {

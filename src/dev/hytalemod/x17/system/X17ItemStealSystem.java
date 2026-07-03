@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.logging.Level;
 
 /**
- * X17ItemStealSystem - v0.3.4
+ * X17ItemStealSystem - v0.3.5
  *
  * Silently removes one priority item from a nearby chest. There are no drops and
  * no visual effects; the item simply disappears from the container.
@@ -211,7 +211,9 @@ public class X17ItemStealSystem {
 
     private WorldChunk getChunk(World world, int x, int z) {
         try {
-            return world.getNonTickingChunk(ChunkUtil.indexChunkFromBlock(x, z));
+            // Use loaded chunks so containers near the player/base are included.
+            // getChunkIfNonTicking can miss actively ticking chunks.
+            return world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(x, z));
         } catch (Exception e) {
             return null;
         }

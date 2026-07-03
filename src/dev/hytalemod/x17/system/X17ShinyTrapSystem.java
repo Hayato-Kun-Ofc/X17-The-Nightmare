@@ -27,7 +27,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem - v0.3.4
+ * X17ShinyTrapSystem - v0.3.5
  *
  * GHOST NIGHT DECOY AMBUSH
  *
@@ -260,7 +260,12 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                     break;
             }
         } catch (Exception e) {
-            log(Level.SEVERE, "[ShinyTrap] Tick exception: " + e.getMessage());
+            // FIX #21: route through logException so the trace lands in the
+            // mod's log file instead of being silently dropped.
+            if (X17Plugin.getInstance() != null) {
+                X17Plugin.getInstance().logException(Level.SEVERE,
+                        "[ShinyTrap] Tick exception", e);
+            }
             state = TrapState.DONE; // fail-safe
         }
     }
@@ -296,6 +301,12 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                 vPos.y(),
                 vPos.z() + Math.sin(spawnAngle) * SPAWN_BEHIND_DIST);
         Vector3d spawnPos = snapToGround(world, spawnRaw);
+        // FIX #10: abort if no valid ground was found - spawning inside a
+        // wall is worse than skipping the trap this night.
+        if (spawnPos == null) {
+            done(store, "No valid ground at decoy spawn point - aborting.");
+            return;
+        }
 
         // Destination: away from player in roughly the same direction
         double destDist = DEST_DIST_MIN + rng.nextDouble() * (DEST_DIST_MAX - DEST_DIST_MIN);
@@ -306,6 +317,11 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                 vPos.y(),
                 vPos.z() + Math.sin(destAngle) * destDist);
         decoyDestination = snapToGround(world, destRaw);
+        // FIX #10: if the destination can't be snapped, fall back to the
+        // spawn position so the decoy at least has somewhere to go.
+        if (decoyDestination == null) {
+            decoyDestination = spawnPos;
+        }
 
         // Pick weapon skin
         decoyRole = DECOY_WEAPON_ROLES[rng.nextInt(DECOY_WEAPON_ROLES.length)];
@@ -491,6 +507,10 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                     vPos.y(),
                     vPos.z() + Math.sin(angle) * X17_SPAWN_DIST);
             Vector3d cand = snapToGround(world, candRaw);
+            // FIX #10: skip candidates where no valid ground was found.
+            if (cand == null) {
+                continue;
+            }
 
             // Reject spots inside ANY player's FOV
             boolean visible = false;
@@ -653,7 +673,15 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
             return true;
 
         } catch (Exception e) {
-            log(Level.WARNING, "[ShinyTrap] spawnNpc(X17) failed: " + e.getMessage());
+            // FIX #4: unwrap InvocationTargetException so the real cause is logged.
+            Throwable cause = X17Plugin.unwrapReflective(e);
+            if (X17Plugin.getInstance() != null) {
+                X17Plugin.getInstance().logException(Level.WARNING,
+                        "[ShinyTrap] spawnNpc(X17) failed", cause);
+            } else {
+                log(Level.WARNING, "[ShinyTrap] spawnNpc(X17) failed: "
+                        + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+            }
             return false;
         }
     }
@@ -747,22 +775,31 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         int z = (int) Math.floor(pos.z());
         int startY = (int) Math.floor(pos.y());
 
+        // FIX #1: getNonTickingChunk() does not exist on World - use
+        // getChunkIfNonTicking(long) which returns a BlockAccessor.
+        // FIX #10: return null on failure (chunk not loaded or no solid
+        // ground found) so callers can abort the spawn instead of placing
+        // an entity at an unvalidated position (which could be inside a wall).
         BlockAccessor accessor;
         try {
-            accessor = world.getNonTickingChunk(ChunkUtil.indexChunkFromBlock(x, z));
+            accessor = world.getChunkIfNonTicking(ChunkUtil.indexChunkFromBlock(x, z));
         } catch (Exception e) {
-            return pos;
+            return null;
         }
-        if (accessor == null)
-            return pos;
+        if (accessor == null) {
+            return null;
+        }
 
         for (int y = startY + 5; y >= startY - 15; y--) {
-            BlockType bt = world.getBlockType(x, y, z);
+            // Use the accessor (not world) for the block-type lookup - matches
+            // the pattern in X17TorchExtinguishSystem and is the recommended
+            // path per the Hytale block API.
+            BlockType bt = accessor.getBlockType(x, y, z);
             if (bt != null && !isPassable(bt)) {
                 return new Vector3d(pos.x(), y + 1.0, pos.z());
             }
         }
-        return pos;
+        return null;
     }
 
     private boolean isPassable(BlockType bt) {

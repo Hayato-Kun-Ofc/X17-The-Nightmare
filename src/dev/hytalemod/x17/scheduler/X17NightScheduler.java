@@ -16,7 +16,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17NightScheduler - v0.3.4
+ * X17NightScheduler - v0.3.5
  *
  * Decides per-night behaviour (SPAWN / GHOST_SOUNDS / SILENT) and persists
  * state across server restarts so the night counter never resets.
@@ -53,9 +53,18 @@ public class X17NightScheduler {
     private boolean isTensionNight = false;
 
     // -- Transition guards -----------------------------------------------------
-    private boolean nightTransitionHandled = false;
-    private boolean dayTransitionHandled = false;
-    private boolean firstTick = true;
+    // FIX #15: made volatile. X17EventSystem.worldTick() calls scheduler.tick()
+    // from the world tick thread; on a multi-world server two worlds could
+    // call tick() concurrently. X17EventSystem's primary-store guard already
+    // ensures single-threaded access in practice, but the volatile fields
+    // make the happens-before guarantee explicit so future refactors that
+    // bypass the primary-store guard remain safe.
+    private volatile boolean nightTransitionHandled = false;
+    private volatile boolean dayTransitionHandled = false;
+    private volatile boolean firstTick = true;
+
+    /** FIX #15: thread-affinity owner. Set on first tick() call. */
+    private transient Thread ownerThread = null;
 
     // -- Tuning ----------------------------------------------------------------
     private static final float[] SPAWN_CHANCES = { 0.30f, 0.45f, 0.55f, 0.60f, 0.65f };
@@ -67,6 +76,9 @@ public class X17NightScheduler {
     private static final int MAX_SANE_NIGHT = 100_000;
     private static final int MAX_SANE_CONSECUTIVE = 1_000;
 
+    // FIX #15: kept for backward compatibility with any external callers that
+    // reference rng directly, but all internal sampling now uses
+    // ThreadLocalRandom.current() to avoid contention on multi-world servers.
     private final Random rng = new Random();
 
     // =========================================================================
@@ -79,6 +91,20 @@ public class X17NightScheduler {
 
     /** Called every tick by X17EventSystem. */
     public void tick(boolean isNight, String worldName) {
+        // FIX #15: thread-affinity assertion. X17EventSystem's primary-store
+        // guard already ensures this method is only ever called from one
+        // thread, but we assert it here so a future refactor that bypasses
+        // the guard fails loudly instead of corrupting the transition flags.
+        if (ownerThread == null) {
+            ownerThread = Thread.currentThread();
+        } else if (ownerThread != Thread.currentThread()) {
+            log(Level.WARNING, "X17NightScheduler.tick() called from "
+                    + Thread.currentThread().getName()
+                    + " but owned by " + ownerThread.getName()
+                    + " - transition flags may race. Skipping this tick.");
+            return;
+        }
+
         if (firstTick) {
             firstTick = false;
             loadState(worldName);
@@ -160,7 +186,11 @@ public class X17NightScheduler {
         }
 
         float chance = getSpawnChance();
-        float roll = rng.nextFloat();
+        // FIX #15: use ThreadLocalRandom instead of the shared rng field to
+        // avoid atomic-seed contention if this method is ever called from
+        // multiple threads (defensive - the thread-affinity check in tick()
+        // should already prevent this).
+        float roll = java.util.concurrent.ThreadLocalRandom.current().nextFloat();
         boolean spawns = roll < chance;
 
         if (spawns) {
@@ -171,7 +201,7 @@ public class X17NightScheduler {
             if (isTensionNight) {
                 currentDecision = NightDecision.GHOST_SOUNDS;
             } else {
-                boolean ghost = rng.nextFloat() < 0.80f;
+                boolean ghost = java.util.concurrent.ThreadLocalRandom.current().nextFloat() < 0.80f;
                 currentDecision = ghost ? NightDecision.GHOST_SOUNDS : NightDecision.SILENT;
                 ghostSoundMultiplier = ghost ? GHOST_SOUND_MULTIPLIER : 0.3f;
             }

@@ -23,21 +23,37 @@ import dev.hytalemod.x17.system.X17ItemStealSystem;
 import dev.hytalemod.x17.system.X17ShadowsSystem;
 import dev.hytalemod.x17.system.X17ShinyTrapSystem;
 import dev.hytalemod.x17.system.X18AISystem;
+import dev.hytalemod.x17.system.X18BlackScreenSafetySystem;
 import dev.hytalemod.x17.system.X18CaveSpawnSystem;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.3.4
+ * X17Plugin - v0.3.5
+ *
+ * FIXES applied (vs v0.3.5):
+ *  - instance field is now volatile (Fix #14: happens-before guarantee
+ *    for cross-thread readers via getInstance()).
+ *  - setupLogger() checks mkdirs() return value and falls back to the
+ *    working directory if the preferred path is unavailable (Fix #5).
+ *  - PrintWriter uses autoFlush=true; manual flush removed (Fix #20).
+ *  - JVM shutdown hook registered as a safety net to close the writer
+ *    even if shutdown() is not called (Fix #20).
+ *  - Added unwrapReflective() helper so spawn paths can unwrap
+ *    InvocationTargetException causes consistently (Fix #4).
+ *  - Added logException() helper for full-stack-trace logging through
+ *    the mod log channel (Fix #21: replaces e.printStackTrace()).
  */
 public class X17Plugin extends JavaPlugin {
 
-    private static X17Plugin instance;
+    private static volatile X17Plugin instance;
     private PrintWriter x17LogWriter;
+    private volatile boolean loggerInitialised = false;
     private ComponentType<EntityStore, X17AIComponent> aiComponentType;
     private ComponentType<EntityStore, X18AIComponent> x18AIComponentType;
     private ComponentType<EntityStore, X17PlayerComponent> playerComponentType;
@@ -56,7 +72,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.4 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.5 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
@@ -95,15 +111,16 @@ public class X17Plugin extends JavaPlugin {
         try {
             getEntityStoreRegistry().registerSystem(aiSystem);
             getEntityStoreRegistry().registerSystem(new X18AISystem());
+            getEntityStoreRegistry().registerSystem(new X18BlackScreenSafetySystem());
             getEntityStoreRegistry().registerSystem(new X18CaveSpawnSystem());
             getEntityStoreRegistry().registerSystem(new X17DamageSystem(aiSystem));
             getEntityStoreRegistry().registerSystem(soundSystem);
             getEntityStoreRegistry().registerSystem(shadowsSystem);
             getEntityStoreRegistry().registerSystem(shinyTrapSystem);
-            // FIX v0.3.2: TorchExtinguishSystem and ItemStealSystem are utility
+            // FIX v0.3.5: TorchExtinguishSystem and ItemStealSystem are utility
             // classes, not TickingSystems - removed from this log line.
             log(Level.INFO,
-                    "Registered: X17AISystem, X18AISystem, X18CaveSpawnSystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
+                    "Registered: X17AISystem, X18AISystem, X18BlackScreenSafetySystem, X18CaveSpawnSystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }
@@ -178,21 +195,46 @@ public class X17Plugin extends JavaPlugin {
     }
 
     private void setupLogger() {
+        File logDir = new File("UserData/Logs/x17_logs");
+        if (!logDir.exists() && !logDir.mkdirs()) {
+            System.err.println("[X-17] Could not create log dir "
+                    + logDir.getAbsolutePath()
+                    + " - falling back to ./x17_nightmare.log");
+            logDir = new File(".");
+        }
         try {
-            File logDir = new File("UserData/Logs/x17_logs");
-            if (!logDir.exists()) {
-                logDir.mkdirs();
-            }
             x17LogWriter = new PrintWriter(
-                    new FileWriter(new File(logDir, "x17_nightmare.log"), true));
+                    new FileWriter(new File(logDir, "x17_nightmare.log"), true),
+                    true); // autoFlush = true
             x17LogWriter.println("=== X-17 Logger Started ===");
+            loggerInitialised = true;
         } catch (IOException e) {
-            System.err.println("Failed to initialize X17 logger: " + e.getMessage());
+            System.err.println("[X-17] Failed to initialize X17 logger: "
+                    + e.getMessage());
+            // x17LogWriter stays null - log() will skip file output,
+            // console output still works.
+        }
+
+        // Safety-net shutdown hook so the writer is closed even if shutdown()
+        // is never called (e.g. JVM crash, SIGKILL during a hard stop).
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (x17LogWriter != null) {
+                    try {
+                        x17LogWriter.close();
+                    } catch (Exception ignored) {
+                    }
+                }
+            }, "X17-Logger-Shutdown"));
+        } catch (IllegalStateException ignored) {
+            // Shutdown already in progress - ignore.
+        } catch (Exception ignored) {
+            // Security manager may block - ignore.
         }
     }
 
     public void log(Level level, String message) {
-        // X_18 messages go exclusively to the file log — never to the main client log.
+        // X_18 messages go exclusively to the file log â€” never to the main client log.
         // Identified by the prefixes used in X18AISystem, X18CaveSpawnSystem, and
         // X18BlackScreenPage: "[AI]", "[Spawner]", "[X18-CaveSpawn]".
         boolean isX18Message = message != null && (message.contains("[AI]") ||
@@ -204,8 +246,48 @@ public class X17Plugin extends JavaPlugin {
         }
         if (x17LogWriter != null) {
             x17LogWriter.println("[" + level.getName() + "] " + message);
-            x17LogWriter.flush();
+            // autoFlush=true on the PrintWriter handles flushing.
         }
+    }
+
+    /**
+     * Logs an exception with its full stack trace through the mod's log channel.
+     * Use this instead of e.printStackTrace() so traces land in the mod's log
+     * file rather than stderr.
+     */
+    public void logException(Level level, String context, Throwable t) {
+        if (t == null) {
+            log(level, context + " (null throwable)");
+            return;
+        }
+        log(level, context + ": " + t.getClass().getSimpleName()
+                + ": " + t.getMessage());
+        for (StackTraceElement el : t.getStackTrace()) {
+            log(level, "    at " + el);
+        }
+        Throwable cause = t.getCause();
+        while (cause != null) {
+            log(level, "  Caused by: " + cause.getClass().getSimpleName()
+                    + ": " + cause.getMessage());
+            for (StackTraceElement el : cause.getStackTrace()) {
+                log(level, "    at " + el);
+            }
+            cause = cause.getCause();
+        }
+    }
+
+    /**
+     * Unwraps InvocationTargetException to expose the underlying cause.
+     * Spawn paths call NPCPlugin.spawnEntity() via reflection; when the spawn
+     * fails the real exception is wrapped and getMessage() returns null.
+     * This helper returns the cause (or the original throwable if no cause).
+     */
+    public static Throwable unwrapReflective(Exception e) {
+        if (e instanceof InvocationTargetException) {
+            Throwable cause = e.getCause();
+            return cause != null ? cause : e;
+        }
+        return e;
     }
 
     private boolean isQuietMainLogMessage(Level level, String message) {

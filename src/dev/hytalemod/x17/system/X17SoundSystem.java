@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.3.4
+ * X17SoundSystem - v0.3.5
  *
  * Sound pacing is synchronized with scheduler decisions:
  * spawn nights get deceptive local sounds, ghost nights get rarer remote
@@ -31,8 +31,6 @@ import java.util.logging.Level;
  * silent nights remain truly quiet.
  */
 public class X17SoundSystem extends TickingSystem<EntityStore> {
-
-    private static final double SPAWN_KNOCK_CHANCE = 0.20;
     private static final double SPAWN_WHISPER_CHANCE = 0.22;
     private static final double GHOST_WHISPER_CHANCE = 0.21;
 
@@ -42,6 +40,8 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private static final int COOLDOWN_SPAWN_MAX = 1100;
     private static final int COOLDOWN_GHOST_MIN = 950;
     private static final int COOLDOWN_GHOST_MAX = 1500;
+    private static final int KNOCK_COOLDOWN_MIN = 1200; // 1 minute
+    private static final int KNOCK_COOLDOWN_MAX = 3600; // 3 minutes
 
     private static final String SND_DOOR_KNOCK = "SFX_X_17_DoorKnock";
     private static final String SND_WINDOW_KNOCK = "SFX_X_17_WindowKnock";
@@ -103,12 +103,24 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private X17NightScheduler scheduler;
     private int scanTimer = 0;
     private int cooldownLeft = 0;
+    private int knockCooldownLeft = KNOCK_COOLDOWN_MIN;
     private final Random rng = new Random();
 
     // State flags set by X17AISystem
     private volatile boolean rageActive = false;
-    private volatile boolean scareSoundPending = false;
-    private volatile Vector3d scareSoundPosition = null;
+
+    // FIX #13: scareSoundPending and scareSoundPosition were previously two
+    // separate volatile fields read+cleared non-atomically. A producer call
+    // between the consumer's read of scareSoundPending and its write of
+    // scareSoundPending=false would overwrite the new position with the old
+    // (already-consumed) one, silently dropping a scare sound.
+    // Replaced with a single AtomicReference<ScareRequest> and getAndSet(null).
+    private static final class ScareRequest {
+        final Vector3d position;
+        ScareRequest(Vector3d p) { this.position = p; }
+    }
+    private final java.util.concurrent.atomic.AtomicReference<ScareRequest> pendingScare =
+            new java.util.concurrent.atomic.AtomicReference<>(null);
 
     private static final String SND_AMBUSH_SCARE = "SFX_X_17_Jumpscare";
 
@@ -121,8 +133,8 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
      * tick.
      */
     public void notifyAmbushScare(Vector3d x17Position) {
-        scareSoundPending = true;
-        scareSoundPosition = x17Position;
+        // FIX #13: atomic publish via AtomicReference.
+        pendingScare.set(new ScareRequest(x17Position));
     }
 
     /** Suppresses ambient sounds while X17 is in RAGE. */
@@ -140,13 +152,18 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     public void tick(float deltaTime, int tickIndex, Store<EntityStore> store) {
         try {
             // Scare sting has highest priority - fire immediately when pending.
-            if (scareSoundPending && scareSoundPosition != null) {
-                scareSoundPending = false;
-                Vector3d pos = scareSoundPosition;
-                scareSoundPosition = null;
-                triggerSound(SND_AMBUSH_SCARE, pos, store);
+            // FIX #13: atomic consume via getAndSet(null) eliminates the race
+            // window where a producer could overwrite the position between
+            // our read of scareSoundPending and our write of scareSoundPending=false.
+            ScareRequest req = pendingScare.getAndSet(null);
+            if (req != null && req.position != null) {
+                triggerSound(SND_AMBUSH_SCARE, req.position, store);
                 cooldownLeft = 60;
                 return;
+            }
+
+            if (knockCooldownLeft > 0) {
+                knockCooldownLeft--;
             }
 
             // During RAGE, suppress all ambient stalker sounds.
@@ -197,42 +214,51 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
                 tickGhostSounds(pt.getPosition(), store);
             }
         } catch (Exception e) {
-            log(Level.SEVERE, "Critical error in X17SoundSystem: " + e.getMessage());
-            e.printStackTrace();
+            // FIX #21: route through logException so the trace lands in the
+            // mod's log file instead of stderr.
+            if (X17Plugin.getInstance() != null) {
+                X17Plugin.getInstance().logException(Level.SEVERE,
+                        "Critical error in X17SoundSystem", e);
+            }
         }
     }
 
     private void tickSpawnNightSounds(Vector3d playerPos, Store<EntityStore> store, World world) {
         StructureContext context = scanStructureContext(playerPos, world);
         Vector3d deceptivePos = buildDeceptionOffset(playerPos, 10.0, 18.0);
+
+        if (knockCooldownLeft <= 0 && (context.doors > 0 || context.windows > 0)) {
+            triggerKnockSound(context, playerPos, store);
+            return;
+        }
+
         double roll = rng.nextDouble();
-
-        if (context.doors > 0 && roll < SPAWN_KNOCK_CHANCE) {
-            log(Level.INFO, "[SND] Door knock near player.");
-            triggerSound(SND_DOOR_KNOCK, playerPos, store);
-            cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
-            return;
-        }
-
-        if (context.windows > 0 && roll < SPAWN_KNOCK_CHANCE + 0.12) {
-            log(Level.INFO, "[SND] Window knock near player.");
-            triggerSound(SND_WINDOW_KNOCK, playerPos, store);
-            cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
-            return;
-        }
-
-        if (roll < SPAWN_KNOCK_CHANCE + SPAWN_WHISPER_CHANCE) {
+        if (roll < SPAWN_WHISPER_CHANCE) {
             log(Level.INFO, "[SND] Deceptive whisper.");
             triggerSound(SND_WHISPERS, deceptivePos, store);
             cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
             return;
         }
-
-        if (roll < SPAWN_KNOCK_CHANCE + (SPAWN_WHISPER_CHANCE * 2.0)) {
+        else if (roll < SPAWN_WHISPER_CHANCE * 2.0) {
             log(Level.INFO, "[SND] Deceptive whisper (extended).");
             triggerSound(SND_WHISPERS, deceptivePos, store);
             cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
         }
+        // else: no sound this tick. Door/window knocks have their own 1-3 min timer.
+    }
+
+    private void triggerKnockSound(StructureContext context, Vector3d playerPos,
+            Store<EntityStore> store) {
+        boolean useDoor = context.doors > 0 && (context.windows <= 0 || rng.nextBoolean());
+        if (useDoor) {
+            log(Level.INFO, "[SND] Door knock near player.");
+            triggerSound(SND_DOOR_KNOCK, playerPos, store);
+        } else {
+            log(Level.INFO, "[SND] Window knock near player.");
+            triggerSound(SND_WINDOW_KNOCK, playerPos, store);
+        }
+        cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
+        knockCooldownLeft = randomBetween(KNOCK_COOLDOWN_MIN, KNOCK_COOLDOWN_MAX);
     }
 
     private void tickGhostSounds(Vector3d playerPos, Store<EntityStore> store) {
@@ -336,9 +362,14 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     private boolean isNight(Store<EntityStore> store) {
         try {
             return store.getResource(WorldTimeResource.getResourceType())
-                    .isDayTimeWithinRange(0.792, 0.208); // FIX v0.3.2: now matches EventSystem (was 0.75/0.25)
+                    .isDayTimeWithinRange(0.792, 0.208);
         } catch (Exception e) {
-            return true;
+            // FIX #6: previously returned true on exception, which meant
+            // ghost whispers and door knocks could play during daytime on
+            // a fresh boot before the time resource loaded. Now matches
+            // X17AISystem.isDaytime() and X17ShadowsSystem.isNight():
+            // silent on error (no horror sounds when in doubt).
+            return false;
         }
     }
 
