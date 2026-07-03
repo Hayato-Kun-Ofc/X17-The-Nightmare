@@ -6,16 +6,18 @@ An advanced, psychological horror mod for the Hytale engine.
 
 ## 🦇 Core Features
 
-- **Persistent Night Presence:** X-17 does not simply spawn and despawn; it actively tracks players and silently repositions around them throughout the night, acting purely on custom Java ticking systems.
-- **Dynamic Night Scheduler:** A sophisticated probability engine that decides whether a night will feature an active spawn, ambient ghost sounds, or complete silence.
-- **Tension System:** If X-17 hasn't spawned for several nights, the mod builds "Tension", guaranteeing an event or increasing ghost sound intensity.
-- **Atomic State Saving:** Night cycles and decisions are safely persisted to the server's disk, ensuring that a server crash mid-night doesn't reset the nightmare.
-- **Natural Aggression & Reactive Combat:** X-17 enters aggressive cycles (HUNT, AMBUSH) naturally through its state machine. Player attacks do not trigger this initial aggression, but instead facilitate a reactive CHASE or force a strategic RETREAT (Vanish) after 2 successful hits.
-- **Observational Intelligence:** The AI uses vision cone evaluation (dot products and yaw/pitch deltas) to detect if it is being watched. It responds to player gaze by vanishing or repositioning to maintain the illusion of a peripheral threat.
-- **Nightly Personalities:** Every night, X-17 rolls a personality (Cautious, Bold, or Erratic) that dynamically alters its aggression, look-exposure limits, and movement patterns.
-- **Silent Pilfering & Environment Hijack:** Beyond physical stalking, X-17 can silently steal priority loot from containers through deep reflection or extinguish nearby torches to force the player into darkness.
-- **Psychological Stalking Patterns:** The AI is designed to avoid direct confrontation, preferring to appear in peripheral vision and then creeping toward the player only when they aren't looking.
-- **Advanced Spawn Scoring:** Selection of spawn points is based on a scoring algorithm that weighs foliage cover, player yaw deltas, and distance to create the most unsettling encounters.
+- **Persistent Nightmare Presences**: The entities do not simply spawn and despawn; they actively track players, reposition around them, hide between encounters, and act through custom Java ticking systems.
+- **Dynamic Night Scheduler**: A sophisticated probability engine that decides whether a night will feature an active X-17 spawn, ambient ghost sounds, or complete silence.
+- **Tension System**: If X-17 hasn't spawned for several nights, the mod builds "Tension", guaranteeing an event or increasing ghost sound intensity.
+- **Atomic State Saving**: Night cycles and decisions are safely persisted to the server's disk, ensuring that a server crash mid-night doesn't reset the nightmare.
+- **Natural Aggression & Reactive Combat**: X-17 enters aggressive cycles (HUNT, AMBUSH) naturally through its state machine. Player attacks do not trigger this initial aggression, but instead facilitate a reactive `CHASE` or force a strategic `RETREAT` (Vanish) after 2 successful hits.
+- **Observational Intelligence**: The AI systems use vision cone evaluation (dot products and yaw/pitch deltas) to detect if they are being watched. They respond to player gaze by vanishing, repositioning, or escalating the encounter.
+- **Nightly Personalities**: Every night, X-17 rolls a personality (Cautious, Bold, or Erratic) that dynamically alters its aggression, look-exposure limits, and movement patterns.
+- **Silent Pilfering & Environment Hijack**: Beyond physical stalking, X-17 can silently steal priority loot from containers through deep reflection or extinguish nearby torches to force the player into darkness.
+- **Psychological Stalking Patterns**: The AI is designed to avoid direct confrontation, preferring to appear in peripheral vision and then creeping toward the player only when they aren't looking.
+- **Cave Horror & X_18 Encounters**: X_18 expands the mod underground with cave-based stalking, same-level lurking, deep cave dwell tracking, charge attacks, grab animation events, blackscreen horror, and cave teleportation.
+- **Advanced Spawn Scoring**: Selection of spawn points is based on scoring algorithms that weigh cover, player yaw deltas, field of view, cave geometry, chamber space, and distance to create the most unsettling encounters.
+- **Dedicated Assets, Animations, and Sounds**: The nightmare entities use custom models, animation controllers, sound events, ambient audio, UI pages, and localized descriptions to make each presence feel distinct.
 
 ## 📖 Installation & Documentation
 
@@ -24,7 +26,7 @@ We have provided an extensive, multi-chapter Wiki explaining every detail of the
 **[Read the Full Documentation Wiki Here](https://wiki.hytalemodding.dev/mod/x17-the-nightmare/introduction)**
 
 ### Quick Start
-1. Ensure you are running Hytale Server version `2026.02.19-1a311a592` or compatible.
+1. Ensure you are running Hytale Server version `0.5` or compatible.
 2. Place the `X17NIGHTMARE` folder into your `UserData/Mods/` directory.
 3. Start your world. 
 4. The mod will silently initialize. Use `/time set night` to begin testing the AI's schedule.
