@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.3.5
+ * X17SoundSystem - v0.3.6
  *
  * Sound pacing is synchronized with scheduler decisions:
  * spawn nights get deceptive local sounds, ghost nights get rarer remote
@@ -109,11 +109,6 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     // State flags set by X17AISystem
     private volatile boolean rageActive = false;
 
-    // FIX #13: scareSoundPending and scareSoundPosition were previously two
-    // separate volatile fields read+cleared non-atomically. A producer call
-    // between the consumer's read of scareSoundPending and its write of
-    // scareSoundPending=false would overwrite the new position with the old
-    // (already-consumed) one, silently dropping a scare sound.
     // Replaced with a single AtomicReference<ScareRequest> and getAndSet(null).
     private static final class ScareRequest {
         final Vector3d position;
@@ -133,7 +128,6 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
      * tick.
      */
     public void notifyAmbushScare(Vector3d x17Position) {
-        // FIX #13: atomic publish via AtomicReference.
         pendingScare.set(new ScareRequest(x17Position));
     }
 
@@ -152,9 +146,6 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     public void tick(float deltaTime, int tickIndex, Store<EntityStore> store) {
         try {
             // Scare sting has highest priority - fire immediately when pending.
-            // FIX #13: atomic consume via getAndSet(null) eliminates the race
-            // window where a producer could overwrite the position between
-            // our read of scareSoundPending and our write of scareSoundPending=false.
             ScareRequest req = pendingScare.getAndSet(null);
             if (req != null && req.position != null) {
                 triggerSound(SND_AMBUSH_SCARE, req.position, store);
@@ -214,8 +205,6 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
                 tickGhostSounds(pt.getPosition(), store);
             }
         } catch (Exception e) {
-            // FIX #21: route through logException so the trace lands in the
-            // mod's log file instead of stderr.
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.SEVERE,
                         "Critical error in X17SoundSystem", e);
@@ -364,9 +353,6 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
             return store.getResource(WorldTimeResource.getResourceType())
                     .isDayTimeWithinRange(0.792, 0.208);
         } catch (Exception e) {
-            // FIX #6: previously returned true on exception, which meant
-            // ghost whispers and door knocks could play during daytime on
-            // a fresh boot before the time resource loaded. Now matches
             // X17AISystem.isDaytime() and X17ShadowsSystem.isNight():
             // silent on error (no horror sounds when in doubt).
             return false;

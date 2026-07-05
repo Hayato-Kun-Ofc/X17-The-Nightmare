@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
- * X17TorchExtinguishSystem - v0.3.5
+ * X17TorchExtinguishSystem - v0.3.6
  *
  * Extinguishes all torch-type blocks within a configurable AOE radius around a
  * given world position. Triggered by X17AISystem whenever X17 enters its first
@@ -141,9 +141,6 @@ public class X17TorchExtinguishSystem {
 
         int extinguished = 0;
 
-        // FIX #3: the class comment (lines 20-27) explicitly warns that calling
-        // world.getBlockType / world.setBlockInteractionState directly compiles
-        // but silently fails at runtime. We must go through the chunk BlockAccessor.
         // The 6-arg overload on BlockAccessor is the one that actually writes the
         // state; the World overload is a no-op for torch interaction states.
         //

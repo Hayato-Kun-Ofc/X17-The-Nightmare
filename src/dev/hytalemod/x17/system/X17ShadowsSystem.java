@@ -20,7 +20,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShadowsSystem - v0.3.5
+ * X17ShadowsSystem - v0.3.6
  *
  * Rare paranormal event for ghost/silent nights (when X17 is NOT actively
  * spawned).
@@ -51,13 +51,9 @@ import java.util.logging.Level;
  * start of every night. The roll happens once; if true, the event is
  * activated after a delay.
  *
- * FIX #23 (v0.3.5): the stale "100% for testing" Javadoc line has been
  * removed. SHADOW_CHANCE = 0.46 is the production value.
- * FIX #18 (v0.3.5): pruneInvalidPoolEntries() now runs every tick (was
  * only on activation) and the pool is capped at SHADOW_COUNT * 2 entries.
- * FIX #24 (v0.3.5): the look-detection block (previously commented out
  * "for testing") is now re-enabled - shadows vanish when observed.
- * FIX #7 (v0.3.5): shadow.ref is now defensively null-checked in the
  * tick loop and the reuse path no longer nulls the ref (it marks the
  * entry invisible instead, letting prune clean it up safely).
  */
@@ -172,12 +168,6 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 return;
             }
 
-            // FIX #18: prune stale entries every tick (cheap on a small list)
-            // and cap the pool at MAX_POOL_SIZE as a safety net. Previously
-            // pruning only happened inside activateShadowRing, so on a
-            // long-running server where shadows rarely triggered the pool
-            // could accumulate dozens of stale entries that the tick loop
-            // had to skip every frame.
             if (!entityPool.isEmpty()) {
                 entityPool.removeIf(e -> e.ref == null || !e.ref.isValid());
                 if (entityPool.size() > MAX_POOL_SIZE) {
@@ -264,7 +254,6 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                 // Always face the player
                 faceTarget(shadowTf, playerTf.getPosition());
 
-                // FIX #24: re-enabled the look-detection block. The class
                 // Javadoc states "If the player looks directly at a shadow,
                 // it vanishes instantly" - this is now actually enforced.
                 if (isPlayerWatchingShadow(playerTf, shadowTf)) {
@@ -295,8 +284,6 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
             }
 
         } catch (Exception e) {
-            // FIX #21: route through logException so the trace lands in the
-            // mod's log file instead of stderr.
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.SEVERE,
                         "[Shadows] Exception in tick", e);
@@ -354,8 +341,6 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
                             + " | dist=" + String.format("%.1f", distance));
                     continue;
                 } else {
-                    // FIX #7: previously nulled existing.ref here, which
-                    // caused the next tick's shadow.ref.isValid() call to
                     // NPE. Now we just mark the entry invisible; the
                     // per-tick prune (FIX #18) will remove it safely.
                     existing.visible = false;
@@ -465,7 +450,6 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
             return result != null;
 
         } catch (Exception e) {
-            // FIX #4: unwrap InvocationTargetException so the real cause is logged.
             Throwable cause = X17Plugin.unwrapReflective(e);
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.WARNING,
@@ -576,7 +560,6 @@ public class X17ShadowsSystem extends TickingSystem<EntityStore> {
      */
     private boolean isPlayerWatchingShadow(TransformComponent playerTf,
             TransformComponent shadowTf) {
-        // FIX #24: re-enabled in v0.3.5 - shadows vanish when observed.
         // Returns true if the player's look direction falls inside a tight
         // yaw+pitch cone centred on the shadow position.
         Vector3d pPos = playerTf.getPosition();

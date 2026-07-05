@@ -14,6 +14,7 @@ import dev.hytalemod.x17.component.X17AIComponent;
 import dev.hytalemod.x17.component.X17PlayerComponent;
 import dev.hytalemod.x17.component.X18AIComponent;
 import dev.hytalemod.x17.scheduler.X17NightScheduler;
+import dev.hytalemod.x17.scheduler.X18CaveDayScheduler;
 import dev.hytalemod.x17.system.X17AISystem;
 import dev.hytalemod.x17.system.X17DamageSystem;
 import dev.hytalemod.x17.system.X17EventSystem;
@@ -25,6 +26,7 @@ import dev.hytalemod.x17.system.X17ShinyTrapSystem;
 import dev.hytalemod.x17.system.X18AISystem;
 import dev.hytalemod.x17.system.X18BlackScreenSafetySystem;
 import dev.hytalemod.x17.system.X18CaveSpawnSystem;
+import dev.hytalemod.x17.system.X18CaveGhostSoundSystem;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -34,20 +36,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 
 /**
- * X17Plugin - v0.3.5
+ * X17Plugin - v0.3.6
  *
- * FIXES applied (vs v0.3.5):
- *  - instance field is now volatile (Fix #14: happens-before guarantee
- *    for cross-thread readers via getInstance()).
- *  - setupLogger() checks mkdirs() return value and falls back to the
- *    working directory if the preferred path is unavailable (Fix #5).
- *  - PrintWriter uses autoFlush=true; manual flush removed (Fix #20).
- *  - JVM shutdown hook registered as a safety net to close the writer
- *    even if shutdown() is not called (Fix #20).
- *  - Added unwrapReflective() helper so spawn paths can unwrap
- *    InvocationTargetException causes consistently (Fix #4).
- *  - Added logException() helper for full-stack-trace logging through
- *    the mod log channel (Fix #21: replaces e.printStackTrace()).
  */
 public class X17Plugin extends JavaPlugin {
 
@@ -72,7 +62,7 @@ public class X17Plugin extends JavaPlugin {
         instance = this;
         setupLogger();
 
-        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.5 ===");
+        log(Level.INFO, "=== X-17 NIGHTMARE v0.3.6 ===");
         log(Level.INFO, "The darkness awakens...");
 
         aiComponentType = getEntityStoreRegistry().registerComponent(
@@ -110,17 +100,17 @@ public class X17Plugin extends JavaPlugin {
 
         try {
             getEntityStoreRegistry().registerSystem(aiSystem);
+            getEntityStoreRegistry().registerSystem(new X18CaveDayScheduler());
             getEntityStoreRegistry().registerSystem(new X18AISystem());
             getEntityStoreRegistry().registerSystem(new X18BlackScreenSafetySystem());
             getEntityStoreRegistry().registerSystem(new X18CaveSpawnSystem());
+            getEntityStoreRegistry().registerSystem(new X18CaveGhostSoundSystem());
             getEntityStoreRegistry().registerSystem(new X17DamageSystem(aiSystem));
             getEntityStoreRegistry().registerSystem(soundSystem);
             getEntityStoreRegistry().registerSystem(shadowsSystem);
             getEntityStoreRegistry().registerSystem(shinyTrapSystem);
-            // FIX v0.3.5: TorchExtinguishSystem and ItemStealSystem are utility
-            // classes, not TickingSystems - removed from this log line.
             log(Level.INFO,
-                    "Registered: X17AISystem, X18AISystem, X18BlackScreenSafetySystem, X18CaveSpawnSystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
+                    "Registered: X17AISystem, X18CaveDayScheduler, X18AISystem, X18BlackScreenSafetySystem, X18CaveSpawnSystem, X18CaveGhostSoundSystem, X17DamageSystem, X17SoundSystem, X17ShadowsSystem, X17ShinyTrapSystem");
         } catch (Exception e) {
             log(Level.WARNING, "Failed to register ticking systems: " + e.getMessage());
         }
@@ -234,12 +224,14 @@ public class X17Plugin extends JavaPlugin {
     }
 
     public void log(Level level, String message) {
-        // X_18 messages go exclusively to the file log â€” never to the main client log.
+        // X_18 messages go exclusively to the file log - never to the main client log.
         // Identified by the prefixes used in X18AISystem, X18CaveSpawnSystem, and
         // X18BlackScreenPage: "[AI]", "[Spawner]", "[X18-CaveSpawn]".
         boolean isX18Message = message != null && (message.contains("[AI]") ||
                 message.contains("[Spawner]") ||
-                message.contains("[X18-CaveSpawn]"));
+                message.contains("[X18-CaveSpawn]") ||
+                message.contains("[X18-CaveDay]") ||
+                message.contains("[X18-GhostCave]"));
 
         if (!isX18Message && !isQuietMainLogMessage(level, message)) {
             System.out.println("[X-17 " + level.getName() + "] " + message);

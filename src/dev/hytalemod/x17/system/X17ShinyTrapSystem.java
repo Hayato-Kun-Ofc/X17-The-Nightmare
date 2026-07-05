@@ -27,10 +27,9 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem - v0.3.5
+ * X17ShinyTrapSystem - v0.3.6
  *
  * GHOST NIGHT DECOY AMBUSH
- *
  *
  * Triggered exclusively on ghost nights (non-spawn). Sequence:
  *
@@ -260,8 +259,6 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                     break;
             }
         } catch (Exception e) {
-            // FIX #21: route through logException so the trace lands in the
-            // mod's log file instead of being silently dropped.
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.SEVERE,
                         "[ShinyTrap] Tick exception", e);
@@ -301,8 +298,6 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                 vPos.y(),
                 vPos.z() + Math.sin(spawnAngle) * SPAWN_BEHIND_DIST);
         Vector3d spawnPos = snapToGround(world, spawnRaw);
-        // FIX #10: abort if no valid ground was found - spawning inside a
-        // wall is worse than skipping the trap this night.
         if (spawnPos == null) {
             done(store, "No valid ground at decoy spawn point - aborting.");
             return;
@@ -317,8 +312,6 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                 vPos.y(),
                 vPos.z() + Math.sin(destAngle) * destDist);
         decoyDestination = snapToGround(world, destRaw);
-        // FIX #10: if the destination can't be snapped, fall back to the
-        // spawn position so the decoy at least has somewhere to go.
         if (decoyDestination == null) {
             decoyDestination = spawnPos;
         }
@@ -507,7 +500,6 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                     vPos.y(),
                     vPos.z() + Math.sin(angle) * X17_SPAWN_DIST);
             Vector3d cand = snapToGround(world, candRaw);
-            // FIX #10: skip candidates where no valid ground was found.
             if (cand == null) {
                 continue;
             }
@@ -673,7 +665,6 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
             return true;
 
         } catch (Exception e) {
-            // FIX #4: unwrap InvocationTargetException so the real cause is logged.
             Throwable cause = X17Plugin.unwrapReflective(e);
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.WARNING,
@@ -768,26 +759,21 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
     /**
      * Snaps a world position to the surface directly below it.
      * Sweeps from (pos.Y + 5) downward up to 20 blocks looking for solid ground.
-     * Falls back to the original position on chunk load failure.
+     * Falls back to the original position if no loaded chunk or floor is found.
      */
     private Vector3d snapToGround(World world, Vector3d pos) {
         int x = (int) Math.floor(pos.x());
         int z = (int) Math.floor(pos.z());
         int startY = (int) Math.floor(pos.y());
 
-        // FIX #1: getNonTickingChunk() does not exist on World - use
-        // getChunkIfNonTicking(long) which returns a BlockAccessor.
-        // FIX #10: return null on failure (chunk not loaded or no solid
-        // ground found) so callers can abort the spawn instead of placing
-        // an entity at an unvalidated position (which could be inside a wall).
         BlockAccessor accessor;
         try {
-            accessor = world.getChunkIfNonTicking(ChunkUtil.indexChunkFromBlock(x, z));
+            accessor = world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(x, z));
         } catch (Exception e) {
-            return null;
+            return pos;
         }
         if (accessor == null) {
-            return null;
+            return pos;
         }
 
         for (int y = startY + 5; y >= startY - 15; y--) {
@@ -799,7 +785,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
                 return new Vector3d(pos.x(), y + 1.0, pos.z());
             }
         }
-        return null;
+        return pos;
     }
 
     private boolean isPassable(BlockType bt) {

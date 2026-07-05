@@ -2,7 +2,9 @@
     "Layers": [
         {
             "Files": [
-                "Sounds/NPC/X_18/HeWatchesU.ogg"
+                "Sounds/NPC/X_18/HeWatchesU.ogg",
+                "Sounds/NPC/X_18/WatchingU3.ogg",
+                "Sounds/NPC/X_18/WatchingU2.ogg"
             ],
             "RandomSettings": {
                 "MinVolume": 0,
@@ -10,7 +12,7 @@
                 "MinPitch": -1.0,
                 "MaxPitch": 0.5
             },
-            "Probability": 30
+            "Probability": 15
         }
     ],
     "Volume": 4.0,

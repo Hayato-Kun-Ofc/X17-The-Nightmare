@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.3.5
+ * X17AISystem - v0.3.6
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -142,7 +142,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final double STEAL_CHANCE_SPAWN = 0.30;
 
     // Singleton guard
-    // FIX #11: replaced static volatile int/long pair with a per-world
     // ConcurrentHashMap. The previous static fields were shared across all
     // worlds, so on a multi-world server world B's tick overwrote world A's
     // singleton lock, causing world A's X-17 to be forced into TRUE_VANISH.
@@ -420,8 +419,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                     tickReposition(ai, x17tf, target);
                     break;
                 case HUNT_APPROACH:
-                    // FIX #9: thread the world through so beginReposition gets
-                    // a non-null World for teleportToObservationPoint scoring.
                     tickHuntApproach(ai, x17tf, world, target);
                     break;
                 case AMBUSH_SCARE:
@@ -441,8 +438,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
                     break;
             }
         } catch (Exception e) {
-            // FIX #21: route through logException so the trace lands in the
-            // mod's log file instead of stderr.
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.SEVERE,
                         "[AI] Exception in tick", e);
@@ -657,9 +652,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         // Periodic abort roll - personality-weighted.
         if (ai.getHuntCommitmentTicks() % 40 == 0 && rng.nextDouble() < p_abortHuntChance) {
             log(Level.INFO, "[AI] Hunt aborted mid-approach. [" + personality + "]");
-            // FIX #9: pass world through (was null) so teleportToObservationPoint
-            // can score tree/foliage cover instead of returning 0 for every
-            // candidate (which produced random open-field spawns).
             beginReposition(ai, x17tf, world, target, false);
             return;
         }
@@ -862,7 +854,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     // =========================================================================
 
     private boolean acquireSingleton(World world, int entityIndex, X17AIComponent ai) {
-        // FIX #11: per-world singleton via ConcurrentHashMap.
         String worldName = world.getName();
         Integer current = activeEntityByWorld.putIfAbsent(worldName, entityIndex);
         if (current == null) {
@@ -940,11 +931,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         int cz = (int) Math.floor(c.z());
         int score = 0, trees = 0;
 
-        // FIX #19: previously allocated ~2800 strings per spawn via
-        // normalizeBlockId on every block. Now uses the raw ID lowercased
-        // (sufficient for substring match), skips the namespace prefix
-        // only if present, and early-exits once trees >= 12 (the cap
-        // for the bonus anyway).
         for (int x = -2; x <= 2; x++) {
             for (int y = -1; y <= 3; y++) {
                 for (int z = -2; z <= 2; z++) {
@@ -1054,11 +1040,6 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void faceTarget(TransformComponent x17tf, Vector3d target) {
-        // FIX #26: delegate to the shared FacingUtil helper so X-17 and X-18
-        // share a single source of truth for the yaw convention. X-17 model
-        // faces +Z by default, so orientOffset = 0.0 (was previously a
-        // raw atan2 call that matched this convention but was duplicated
-        // from X18AISystem.faceToward which uses +PI).
         Vector3d pos = x17tf.getPosition();
         x17tf.setRotation(
                 dev.hytalemod.x17.FacingUtil.rotationToFace(pos, target, 0.0));

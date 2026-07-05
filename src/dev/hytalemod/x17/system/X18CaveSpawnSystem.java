@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
 import dev.hytalemod.x17.component.X18AIComponent;
+import dev.hytalemod.x17.scheduler.X18CaveDayScheduler;
 import org.joml.Vector3d;
 
 import java.lang.reflect.Method;
@@ -23,20 +24,6 @@ import java.util.logging.Level;
  * Creates the first X_18 entity with the same Java NPCPlugin pattern used by
  * X_17. After creation, X18AISystem pools/reuses that entity.
  *
- * FIXES applied (vs v0.3.5):
- *  FIX-A  Null guard on X18AIComponent.getComponentType() before calling
- *         store.getEntityCountFor(). If the component type is not yet
- *         initialised (should not happen in normal flow, but defensively safe),
- *         we skip the tick instead of NPE-crashing.
- *  FIX-B  findCavePlayer: world.getPlayerRefs() null check was already present,
- *         but an additional null guard on playerRef itself and its reference
- *         are now consistent with X17EventSystem.findNearestPlayerTransform().
- *  FIX-C  spawnJavaX18: if spawnEntity returns null (entity not created),
- *         the method now explicitly returns false so retryCooldownTicks is
- *         still set, preventing a tight retry loop — mirrors X17's pattern.
- *  FIX-D  ensureX18AIComponent: initialises lastKnownPlayerPos to the spawn
- *         position rather than (0,0,0) so that the first hide() call in
- *         X18AISystem never teleports to world origin.
  */
 public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
 
@@ -57,18 +44,17 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
     @Override
     public void tick(float deltaTime, int tickIndex, Store<EntityStore> store) {
         try {
-            // World restriction guard — skip non-overworld stores entirely
+            // World restriction guard - skip non-overworld stores entirely
             if (!isAllowedWorld(resolveWorldName(store))) {
                 return;
             }
 
-            // FIX-A: guard against uninitialised component type
             if (X18AIComponent.getComponentType() == null) {
                 return;
             }
 
             if (store.getEntityCountFor(X18AIComponent.getComponentType()) > 0) {
-                // X_18 already exists in this store — nothing to do
+                // X_18 already exists in this store - nothing to do
                 return;
             }
 
@@ -81,8 +67,14 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
             if (es == null || es.getWorld() == null) {
                 return;
             }
+            World world = es.getWorld();
 
-            TransformComponent playerTf = findCavePlayer(es.getWorld(), store);
+            if (!X18CaveDayScheduler.isRealCaveDay(world, store)) {
+                caveTicks = 0;
+                return;
+            }
+
+            TransformComponent playerTf = findCavePlayer(world, store);
             if (playerTf == null) {
                 caveTicks = 0;
                 return;
@@ -95,7 +87,7 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
 
             // Spawn X_18 at the player's position (valid world bounds).
             // X18AISystem.tickHidden() immediately re-hides it underground on
-            // the first tick — spawning at y=POOL_HIDE_Y caused the engine to
+            // the first tick - spawning at y=POOL_HIDE_Y caused the engine to
             // throw a bounds exception (e.getMessage() == null) because y=-31
             // is outside the world floor (limit y=0).
             Vector3d spawnPos = new Vector3d(playerTf.getPosition());
@@ -114,7 +106,6 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
     }
 
     /**
-     * FIX-D: playerInitialPos is passed in so that ensureX18AIComponent can
      * initialise lastKnownPlayerPos to a meaningful location rather than (0,0,0).
      */
     private boolean spawnJavaX18(Store<EntityStore> store, Vector3d spawnPos,
@@ -177,9 +168,8 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
                     null,
                     postSpawn);
 
-            // FIX-C: null result means entity was not created
             if (result == null) {
-                log(Level.WARNING, "[Spawner] spawnEntity returned null — X_18 not created.");
+                log(Level.WARNING, "[Spawner] spawnEntity returned null - X_18 not created.");
                 return false;
             }
             return true;
@@ -208,7 +198,6 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
      * underground so it is never visible during the 1-tick window between
      * spawn and the first X18AISystem tick.
      *
-     * FIX-D: initialise lastKnownPlayerPos to the cave player's position so
      * that the first hide() call in X18AISystem has valid coordinates.
      */
     private void ensureX18AIComponent(Store<EntityStore> store,
@@ -232,7 +221,7 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
                         playerInitialPos.z());
             }
 
-            // Teleport to pool immediately — entity was spawned at the player's
+            // Teleport to pool immediately - entity was spawned at the player's
             // position (valid y) to satisfy the engine's bounds check, but must
             // be invisible before X18AISystem takes over on the next tick.
             TransformComponent tf = store.getComponent(
@@ -275,7 +264,6 @@ public class X18CaveSpawnSystem extends TickingSystem<EntityStore> {
      * Returns the TransformComponent of the first player found in a cave
      * (y <= CAVE_Y_LIMIT). Returns null if no cave player exists.
      *
-     * FIX-B: consistent null checks on playerRef and playerRef.getReference().
      */
     private TransformComponent findCavePlayer(World world, Store<EntityStore> store) {
         if (world == null || world.getPlayerRefs() == null) {

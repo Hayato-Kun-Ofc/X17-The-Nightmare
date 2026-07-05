@@ -21,6 +21,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
 import dev.hytalemod.x17.component.X18AIComponent;
 import dev.hytalemod.x17.component.X18AIComponent.X18State;
+import dev.hytalemod.x17.scheduler.X18CaveDayScheduler;
 import dev.hytalemod.x17.ui.X18BlackScreenPage;
 import org.joml.Vector3d;
 
@@ -28,90 +29,89 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /*
- * X_18 â€” Cave Stalker AI â€” v0.3.5
+ * X_18 - Cave Stalker AI - v0.3.6
  *
- * â”€â”€ DESIGN REQUIREMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * -- DESIGN REQUIREMENTS ------------------------------------------------------
  *
  *  1. POOLED ENTITY: the entity spawns once via X18CaveSpawnSystem and is
  *     NEVER despawned. "Appearing" means teleporting from underground to a
  *     valid cave position. "Vanishing" means teleporting back underground.
  *
- *  2. POSITIONING: appear behind/beside the player at 7â€“11 blocks, next to
+ *  2. POSITIONING: appear behind/beside the player at 7-11 blocks, next to
  *     a solid stone/rock wall, outside their FOV. Three-tier fallback
  *     guarantees a position is always found. Lurk positions are at the same
- *     Y level (Â±3 blocks) with line-of-sight to the player.
+ *     Y level (+/-3 blocks) with line-of-sight to the player.
  *
  *  3. TIMING (20 ticks = 1 second):
- *       â€¢ Stalk duration  : ~8 s (160 ticks) â€” player feels watched.
- *       â€¢ Lurk duration   : ~10 s (200 ticks) â€” distant, silent watcher.
- *       â€¢ Post-appearance gap : 15 s (300 ticks) â€” suspense between sightings.
- *       â€¢ Post-charge gap :  7.5 s (150 ticks) â€” X_18 returns aggressively.
- *       â€¢ Search retry    :  3 s  (60 ticks) â€” fast retry if no floor found.
+ *       * Stalk duration  : ~8 s (160 ticks) - player feels watched.
+ *       * Lurk duration   : ~10 s (200 ticks) - distant, silent watcher.
+ *       * Post-appearance gap : 15 s (300 ticks) - suspense between sightings.
+ *       * Post-charge gap :  7.5 s (150 ticks) - X_18 returns aggressively.
+ *       * Search retry    :  3 s  (60 ticks) - fast retry if no floor found.
  *
  *  4. BEHAVIOUR:
- *       â€¢ While STALKING: face player directly, accumulate look-exposure
- *         (â‰¥8 ticks of eye-contact). On exposure OR natural timer expiry â†’
+ *       * While STALKING: face player directly, accumulate look-exposure
+ *         (>=8 ticks of eye-contact). On exposure OR natural timer expiry ->
  *           95% VANISH, 5% CHARGE (attack).
- *       â€¢ While LURKING: 10â€“18 blocks away at the same cave level, facing
- *         the player silently with line-of-sight. Vanishes on â‰¥10 ticks of
+ *       * While LURKING: 10-18 blocks away at the same cave level, facing
+ *         the player silently with line-of-sight. Vanishes on >=10 ticks of
  *         eye-contact OR timer expiry. No charge possible from LURK.
- *       â€¢ ~40% of appearances become LURK instead of STALK.
- *       â€¢ LURK only triggers if a same-level position with line-of-sight is
+ *       * ~40% of appearances become LURK instead of STALK.
+ *       * LURK only triggers if a same-level position with line-of-sight is
  *         found; falls back to normal STALK if not.
- *       â€¢ If player gets within 2.5 blocks â†’ vanish immediately (no attack).
- *       â€¢ CHARGE is used AT MOST ONCE per cave session. After a charge the
+ *       * If player gets within 2.5 blocks -> vanish immediately (no attack).
+ *       * CHARGE is used AT MOST ONCE per cave session. After a charge the
  *         flag resets only when the player leaves the cave and re-enters.
- *       â€¢ After a charge, ignoreStillnessOnce is set so X_18 is guaranteed
+ *       * After a charge, ignoreStillnessOnce is set so X_18 is guaranteed
  *         to re-appear even if the player is running.
- *       â€¢ If player leaves cave during stalk/charge/lurk â†’ vanish immediately,
+ *       * If player leaves cave during stalk/charge/lurk -> vanish immediately,
  *         reset session.
  *
  *  5. SINGLETON GUARD: only one X_18 AI runs per world. The guard is
  *     timestamp-based (not index-based) so it survives entity re-creation
  *     after server reload or player rejoin without locking forever.
  *
- *  6. CAVE DETECTION: uses hysteresis (enter at yâ‰¤85, exit at y>95) to
+ *  6. CAVE DETECTION: uses hysteresis (enter at y<=85, exit at y>95) to
  *     prevent false session resets on ramps and terrain transitions.
  *
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * -----------------------------------------------------------------------------
  */
 public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
-    // â”€â”€ Geometry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Geometry -------------------------------------------------------------
     private static final double MIN_SPAWN_DIST = 7.0;
     private static final double MAX_SPAWN_DIST = 11.0;
     private static final double POOL_HIDE_Y = 2.0;
 
-    // â”€â”€ Night time range â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Night time range -----------------------------------------------------
     private static final double NIGHT_START = 0.792;
     private static final double NIGHT_END = 0.208;
 
-    // â”€â”€ Cave detection hysteresis (imported from component) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Cave detection hysteresis (imported from component) ------------------
     private static final double CAVE_ENTER_Y = X18AIComponent.CAVE_ENTER_Y;
     private static final double CAVE_EXIT_Y = X18AIComponent.CAVE_EXIT_Y;
 
-    // â”€â”€ Lurk geometry (imported from component constants for readability) â”€â”€â”€â”€â”€
+    // -- Lurk geometry (imported from component constants for readability) -----
     private static final double LURK_MIN_DIST = X18AIComponent.LURK_MIN_DIST;
     private static final double LURK_MAX_DIST = X18AIComponent.LURK_MAX_DIST;
     private static final int LURK_Y_TOLERANCE = X18AIComponent.LURK_Y_TOLERANCE;
 
-    // â”€â”€ FOV cone â€” "is the player looking at X_18?" â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    private static final double YAW_HALF = 0.42; // â‰ˆ 24Â°
-    private static final double PITCH_HALF = 0.48; // â‰ˆ 28Â°
+    // -- FOV cone - "is the player looking at X_18?" -----------------------
+    private static final double YAW_HALF = 0.42; // ~ 24 deg
+    private static final double PITCH_HALF = 0.48; // ~ 28 deg
 
     /**
      * Continuous ticks of eye-contact needed to trigger vanish during STALK.
      * Imported from component: {@link X18AIComponent#STALK_EXPOSURE_TICKS}.
      */
 
-    // â”€â”€ Combat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Combat ---------------------------------------------------------------
     private static final float CHARGE_DAMAGE = 45.0f;
     private static final double DAMAGE_DIST = 1.8;
     private static final double CHARGE_SPEED = 0.60;
     private static final double PROXIMITY_VANISH_DIST = 2.5;
 
-    // â”€â”€ Singleton guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // FIX #12: replaced static volatile long pair with a per-world
+    // -- Singleton guard -------------------------------------------------------
     // ConcurrentHashMap. The previous static fields were shared across all
     // worlds, so on a multi-world server world B's tick overwrote world A's
     // singleton lock. The map keyed by world name gives each world its own
@@ -122,7 +122,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     private long myBirthTimestamp = -1L; // set on first valid tick
 
-    // â”€â”€ Per-instance state (not persisted, resets correctly on new system) â”€â”€
+    // -- Per-instance state (not persisted, resets correctly on new system) --
     private final Random rng = new Random();
     private int lookExposure = 0; // for STALKING
     private int lookExposureLurk = 0; // for LURKING (separate counter)
@@ -133,13 +133,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
      * Once false, stays false until player goes below CAVE_ENTER_Y.
      */
     private boolean playerCaveConfirmed = false;
-    // Stillness tracking â€” last known player position to compute movement delta
+    // Stillness tracking - last known player position to compute movement delta
     private Vector3d lastPlayerPos = null;
     private int lastDayResetted = -1;
     private boolean wasNight = false;
+    private X18CaveDayScheduler.CaveDayMode lastSuppressedCaveMode = null;
 
-    // â”€â”€ Black screen safety: stored refs to close the overlay without needing
-    // the player to be detected as "in cave" by findNearestCavePlayer. â”€â”€â”€â”€â”€â”€
+    // -- Black screen safety: stored refs to close the overlay without needing
+    // the player to be detected as "in cave" by findNearestCavePlayer. ------
     private PlayerRef blackScreenPlayerRef = null;
     private Store<EntityStore> blackScreenStore = null;
 
@@ -179,7 +180,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 ai.decrementActionTimer();
             }
 
-            // â”€â”€ Day/Night boundary check for daily event reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- Day/Night boundary check for daily event reset ---------------------
             try {
                 WorldTimeResource tr = store.getResource(WorldTimeResource.getResourceType());
                 if (tr != null) {
@@ -207,18 +208,26 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 // Ignore time check failures
             }
 
+            X18CaveDayScheduler.CaveDayMode caveDayMode = X18CaveDayScheduler.getMode(world, store);
+            boolean blackoutActive = ai.getCurrentState() == X18State.DEEP_CAVE_GRABBING
+                    || ai.getCurrentState() == X18State.DEEP_CAVE_BLACKOUT;
+            if (caveDayMode != X18CaveDayScheduler.CaveDayMode.REAL && !blackoutActive) {
+                suppressNonRealCaveDay(ai, x18tf, caveDayMode);
+                return;
+            }
+            if (caveDayMode == X18CaveDayScheduler.CaveDayMode.REAL) {
+                lastSuppressedCaveMode = null;
+            }
+
             // Find nearest cave player this tick (uses hysteresis)
-            // FIX #8: pass the X-18's current position as the reference so
-            // findNearestCavePlayer computes distance from us, not from the
-            // world origin.
             TargetData target = findNearestCavePlayer(world, store, x18tf.getPosition());
 
-            // â”€â”€ Session tracking with hysteresis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            // playerCaveConfirmed uses a 10-block deadband (enter â‰¤85, exit >95)
+            // -- Session tracking with hysteresis -----------------------------
+            // playerCaveConfirmed uses a 10-block deadband (enter <=85, exit >95)
             // to prevent false session resets on ramps and terrain transitions.
             boolean playerInCave = (target != null);
             if (!playerInCave && playerWasInCave) {
-                // Player left the cave â€” reset session so attack can happen again
+                // Player left the cave - reset session so attack can happen again
                 ai.resetSession();
                 lastPlayerPos = null;
                 playerCaveConfirmed = false;
@@ -229,7 +238,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             }
             playerWasInCave = playerInCave;
 
-            // â”€â”€ Stillness tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- Stillness tracking -------------------------------------------
             // Update per-tick regardless of state so the counter builds up
             // while X_18 is hidden and resets the moment the player moves.
             if (target != null) {
@@ -243,7 +252,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 lastPlayerPos = null;
             }
 
-            // â”€â”€ Black Screen safety close countdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- Black Screen safety close countdown --------------------------
             // Runs before state dispatch so a crash in dispatch never blocks close.
             // Uses stored PlayerRef/Store from when the screen was shown.
             if (ai.getBlackScreenCloseTicks() > 0) {
@@ -261,7 +270,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 }
             }
 
-            // â”€â”€ Deep Cave Dwell Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- Deep Cave Dwell Tracking -------------------------------------
             // Accumulates dwell time when the player is below Y=60 (absolute).
             // When dwell reaches 800 ticks (~40 s), triggers deep cave event.
             // Dwell decays gradually (not hard-reset) when above threshold so
@@ -272,11 +281,11 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 if (playerY < X18AIComponent.DEEP_CAVE_Y_THRESHOLD) {
                     ai.incrementDeepCaveDwell();
                     if (ai.getDeepCaveDwellTicks() >= X18AIComponent.DEEP_CAVE_DWELL_REQUIRED) {
-                        // Dwell requirement met â€” trigger deep cave event
+                        // Dwell requirement met - trigger deep cave event
                         triggerDeepCaveEvent(ai, x18tf, world, target);
                     }
                 } else {
-                    // Player above threshold â€” decay dwell counter gradually.
+                    // Player above threshold - decay dwell counter gradually.
                     // Using decayDeepCaveDwell() instead of a hard reset so that
                     // brief terrain climbs (ramps, ledges) don't wipe accumulated
                     // dwell time. The counter loses 3 ticks per game-tick while
@@ -286,7 +295,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 }
             }
 
-            // â”€â”€ State dispatch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- State dispatch -----------------------------------------------
             switch (ai.getCurrentState()) {
                 case HIDDEN:
                     tickHidden(ai, x18tf, world, target);
@@ -317,9 +326,6 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                     break;
             }
         } catch (Exception e) {
-            // FIX #21: route through logException so the trace lands in the
-            // mod's log file instead of being silently dropped (the previous
-            // call only logged getMessage(), which loses the stack trace).
             if (X17Plugin.getInstance() != null) {
                 X17Plugin.getInstance().logException(Level.WARNING,
                         "[AI] Tick exception", e);
@@ -336,11 +342,11 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     private void tickHidden(X18AIComponent ai, TransformComponent x18tf,
             World world, TargetData target) {
 
-        // Safety â€” push underground if drifted above exit threshold
+        // Safety - push underground if drifted above exit threshold
         Vector3d cur = x18tf.getPosition();
         if (cur.y() > CAVE_EXIT_Y) {
             x18tf.teleportPosition(new Vector3d(cur.x(), POOL_HIDE_Y, cur.z()));
-            log(Level.WARNING, "[AI] Drifted above cave limit while HIDDEN â€” pushed underground.");
+            log(Level.WARNING, "[AI] Drifted above cave limit while HIDDEN - pushed underground.");
         }
 
         // Not ready yet, or no player in cave
@@ -354,10 +360,10 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         // regardless of X_18's current state. Blocking HIDDEN here prevented
         // normal STALK/LURK appearances without any benefit to the dwell logic.
 
-        // â”€â”€ Stillness gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // -- Stillness gate ----------------------------------------------------
         // X_18 only emerges when the player has been standing still long enough.
         // This makes caves feel watched specifically when the player stops to
-        // look around â€” movement breaks the spell.
+        // look around - movement breaks the spell.
         //
         // EXCEPTION: after a charge attack, ignoreStillnessOnce is set so the
         // X_18 is guaranteed to re-appear even if the player is running.
@@ -371,14 +377,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         // Search for a valid spawn position
         Vector3d spawnPos = findSpawnPosition(world, target.tf);
         if (spawnPos == null) {
-            // No walkable position found â€” short retry, don't eat the long gap
+            // No walkable position found - short retry, don't eat the long gap
             ai.setSpawnCooldownTicks(X18AIComponent.SEARCH_RETRY_COOLDOWN);
             log(Level.INFO, "[AI] Position search failed. Retry in " + X18AIComponent.SEARCH_RETRY_COOLDOWN + "t.");
             return;
         }
 
         // Teleport and begin stalking OR lurking
-        // â”€â”€ LURK roll: ~40% chance if a same-level position with LOS exists â”€â”€
+        // -- LURK roll: ~40% chance if a same-level position with LOS exists --
         boolean tryLurk = rng.nextInt(100) < X18AIComponent.LURK_CHANCE_PCT;
         if (tryLurk) {
             Vector3d lurkPos = findLurkPosition(world, target.tf);
@@ -399,8 +405,8 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                         + "  dist=" + fmt1(lurkPos.distance(target.tf.getPosition())) + "b");
                 return;
             }
-            // No valid lurk position â€” fall through to normal STALK
-            log(Level.INFO, "[AI] Lurk roll hit but no LOS position â€” falling back to STALK.");
+            // No valid lurk position - fall through to normal STALK
+            log(Level.INFO, "[AI] Lurk roll hit but no LOS position - falling back to STALK.");
         }
 
         // Normal stalk path
@@ -423,10 +429,10 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     // =========================================================================
     // STATE: STALKING
     // Visible, staring. Tracks look-exposure.
-    // â€¢ lookExposure >= STALK_EXPOSURE_TICKS OR stalk timer expired
-    // â†’ 95% vanish, 5% charge (unless attack already used this session)
-    // â€¢ Player within PROXIMITY_VANISH_DIST â†’ vanish immediately
-    // â€¢ Player left cave â†’ vanish, reset session
+    // * lookExposure >= STALK_EXPOSURE_TICKS OR stalk timer expired
+    // -> 95% vanish, 5% charge (unless attack already used this session)
+    // * Player within PROXIMITY_VANISH_DIST -> vanish immediately
+    // * Player left cave -> vanish, reset session
     // =========================================================================
 
     private void tickStalking(X18AIComponent ai, TransformComponent x18tf,
@@ -434,7 +440,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
         // Player left cave
         if (target == null) {
-            log(Level.INFO, "[AI] Player left cave during stalk â€” vanishing.");
+            log(Level.INFO, "[AI] Player left cave during stalk - vanishing.");
             scheduleVanish(ai);
             return;
         }
@@ -448,7 +454,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
         double dist = x18tf.getPosition().distance(target.tf.getPosition());
 
-        // Proximity vanish â€” player walked too close
+        // Proximity vanish - player walked too close
         if (dist < PROXIMITY_VANISH_DIST) {
             log(Level.INFO, "[AI] Proximity vanish (dist=" + fmt1(dist) + ").");
             scheduleVanish(ai);
@@ -469,9 +475,9 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         if (!spotted && !timerExpired)
             return; // still stalking
 
-        // â”€â”€ 75 / 25 roll â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // -- 75 / 25 roll -----------------------------------------------------
         // v0.3.5: raised from 5% to 25% charge chance.
-        // Original 5% was too rare â€” with ~3-4 stalk events per night the
+        // Original 5% was too rare - with ~3-4 stalk events per night the
         // player almost never saw a charge. 25% means ~1 charge per 4 events,
         // which reliably guarantees at least one per night.
         String trigger = spotted ? "spotted" : "timer";
@@ -502,7 +508,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             CommandBuffer<EntityStore> commandBuffer) {
 
         if (target == null) {
-            log(Level.INFO, "[AI] Charge aborted â€” player left cave.");
+            log(Level.INFO, "[AI] Charge aborted - player left cave.");
             scheduleVanishPostCharge(ai);
             return;
         }
@@ -541,7 +547,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     private void tickVanishing(X18AIComponent ai, TransformComponent x18tf,
             Ref<EntityStore> x18Ref, Store<EntityStore> store) {
-        // Play despawn animation â€” wrapped so a missing animation never crashes
+        // Play despawn animation - wrapped so a missing animation never crashes
         playStatusAnimation(store, x18Ref, "Despawn");
 
         hideUnderground(ai, x18tf);
@@ -550,9 +556,9 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     // =========================================================================
     // STATE: LURKING
     //
-    // X_18 is far away (13â€“18 blocks) and deep below the player, completely
+    // X_18 is far away (13-18 blocks) and deep below the player, completely
     // still, staring up. It vanishes the moment the player locks eyes with it
-    // (â‰¥2 ticks) or after the lurk timer expires. No charge is possible.
+    // (>=2 ticks) or after the lurk timer expires. No charge is possible.
     //
     // Design intent: the player sees something in the dark far below them,
     // then it's gone. Pure dread, no aggression.
@@ -563,7 +569,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
         // Player left cave
         if (target == null) {
-            log(Level.INFO, "[AI] Player left cave during lurk â€” vanishing.");
+            log(Level.INFO, "[AI] Player left cave during lurk - vanishing.");
             scheduleVanish(ai);
             return;
         }
@@ -577,14 +583,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
         double dist = x18tf.getPosition().distance(target.tf.getPosition());
 
-        // Proximity vanish â€” player somehow walked very close
+        // Proximity vanish - player somehow walked very close
         if (dist < PROXIMITY_VANISH_DIST) {
             log(Level.INFO, "[AI] Lurk proximity vanish (dist=" + fmt1(dist) + ").");
             scheduleVanish(ai);
             return;
         }
 
-        // Eye-contact detection â€” vanish fast (2 ticks), more reactive than STALK
+        // Eye-contact detection - vanish fast (2 ticks), more reactive than STALK
         if (isPlayerWatching(target.tf, x18tf.getPosition())) {
             lookExposureLurk++;
         } else {
@@ -593,26 +599,26 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (lookExposureLurk >= X18AIComponent.LURK_EXPOSURE_TICKS) {
-            log(Level.INFO, "[AI] Lurk spotted â€” vanishing.");
+            log(Level.INFO, "[AI] Lurk spotted - vanishing.");
             lookExposureLurk = 0;
             scheduleVanish(ai);
             return;
         }
 
-        // Timer expired â€” vanish silently, unseen
+        // Timer expired - vanish silently, unseen
         if (ai.getActionTimerTicks() <= 0) {
-            log(Level.INFO, "[AI] Lurk timer expired â€” vanishing unseen.");
+            log(Level.INFO, "[AI] Lurk timer expired - vanishing unseen.");
             lookExposureLurk = 0;
             scheduleVanish(ai);
         }
     }
 
     // =========================================================================
-    // DEEP CAVE EVENT â€” triggered after 4s below Y=40
+    // DEEP CAVE EVENT - triggered after 4s below Y=40
     //
     // 50/50 split:
-    // 50% â†’ DEEP_CAVE_CHARGING: guaranteed charge attack
-    // 50% â†’ DEEP_CAVE_GRABBING: instant approach + grab animation
+    // 50% -> DEEP_CAVE_CHARGING: guaranteed charge attack
+    // 50% -> DEEP_CAVE_GRABBING: instant approach + grab animation
     //
     // After either event: X_18 shuts down until next night.
     // =========================================================================
@@ -624,14 +630,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
      */
     private void triggerDeepCaveEvent(X18AIComponent ai, TransformComponent x18tf,
             World world, TargetData target) {
-        // Event triggers â€” find a spawn position near the player
+        // Event triggers - find a spawn position near the player
         Vector3d spawnPos = findSpawnPosition(world, target.tf);
         if (spawnPos == null) {
             // Fallback: try lurk position
             spawnPos = findLurkPosition(world, target.tf);
         }
         if (spawnPos == null) {
-            // No valid position â€” retry next tick
+            // No valid position - retry next tick
             log(Level.WARNING, "[AI] Deep cave event: no valid position. Retrying.");
             return;
         }
@@ -648,14 +654,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         // 50/50 roll: Grab vs Charge
         int grabRoll = rng.nextInt(100);
         if (grabRoll < X18AIComponent.DEEP_CAVE_GRAB_PCT) {
-            // GRAB event â€” instant approach + grab hold + blackout + teleport
+            // GRAB event - instant approach + grab hold + blackout + teleport
             ai.setGrabSubPhase(0);
             ai.setActionTimerTicks(X18AIComponent.DEEP_CAVE_GRAB_HOLD_TICKS);
             ai.setCurrentState(X18State.DEEP_CAVE_GRABBING);
             log(Level.INFO, "[AI] DEEP CAVE GRAB triggered @ " + fmt(spawnPos)
                     + " (grabRoll=" + grabRoll + "%, threshold=" + X18AIComponent.DEEP_CAVE_GRAB_PCT + "%)");
         } else {
-            // CHARGE event â€” guaranteed charge attack
+            // CHARGE event - guaranteed charge attack
             ai.setActionTimerTicks(X18AIComponent.DEEP_CAVE_CHARGE_DURATION);
             ai.setCurrentState(X18State.DEEP_CAVE_CHARGING);
             log(Level.INFO, "[AI] DEEP CAVE CHARGE triggered @ " + fmt(spawnPos)
@@ -668,7 +674,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     /**
      * DEEP_CAVE_CHARGING: guaranteed charge attack at the player.
-     * Functions like normal CHARGING but always commits â€” no abort on timer.
+     * Functions like normal CHARGING but always commits - no abort on timer.
      * After damage or timer, shuts down X_18 for the rest of the day.
      */
     private void tickDeepCaveCharging(X18AIComponent ai, TransformComponent x18tf,
@@ -696,7 +702,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        // Timer expired â€” even if missed, shut down
+        // Timer expired - even if missed, shut down
         if (ai.getActionTimerTicks() <= 0) {
             log(Level.INFO, "[AI] Deep cave charge: timer expired (missed). Shutting down.");
             shutdownForDay(ai, x18tf);
@@ -704,11 +710,11 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * DEEP_CAVE_GRABBING â€” full grab sequence with player immobilization.
+     * DEEP_CAVE_GRABBING - full grab sequence with player immobilization.
      *
      * Sub-phase 0 (APPROACH):
      * X_18 charges toward the player at DEEP_CAVE_GRAB_SPEED using the
-     * ChargeAttack animation. On contact (dist â‰¤ DAMAGE_DIST), saves the
+     * ChargeAttack animation. On contact (dist <= DAMAGE_DIST), saves the
      * grab origin position and transitions to sub-phase 1.
      *
      * Sub-phase 1 (GRAB HOLD):
@@ -732,7 +738,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         int subPhase = ai.getGrabSubPhase();
 
         if (subPhase == 0) {
-            // â”€â”€ APPROACH: rush toward player with ChargeAttack animation â”€â”€â”€â”€â”€
+            // -- APPROACH: rush toward player with ChargeAttack animation -----
             faceToward(x18tf, playerPos);
             double dist = x18tf.getPosition().distance(playerPos);
 
@@ -742,7 +748,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             if (dist > DAMAGE_DIST) {
                 moveToward(x18tf, playerPos, X18AIComponent.DEEP_CAVE_GRAB_SPEED);
             } else {
-                // â”€â”€ CONTACT: save grab origin, switch to Grab animation â”€â”€â”€â”€â”€â”€
+                // -- CONTACT: save grab origin, switch to Grab animation ------
                 ai.setGrabOrigin(playerPos.x(), playerPos.y(), playerPos.z());
 
                 // Calculate grab stand position 1.2 blocks in front of the player
@@ -772,7 +778,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         } else {
             ai.decrementActionTimer();
 
-            // â”€â”€ GRAB HOLD: immobilize player, lock vision to X_18 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- GRAB HOLD: immobilize player, lock vision to X_18 ------------
             Vector3d grabOrigin = new Vector3d(
                     ai.getGrabOriginX(), ai.getGrabOriginY(), ai.getGrabOriginZ());
             Vector3d grabStand = new Vector3d(
@@ -797,13 +803,13 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             playStatusAnimation(store, x18Ref, "Grab");
 
             if (ai.getActionTimerTicks() <= 0) {
-                // Hold complete â€” transition to blackout
+                // Hold complete - transition to blackout
                 log(Level.INFO, "[AI] Deep cave grab: hold complete. Starting blackout.");
                 ai.setGrabSubPhase(0);
                 ai.setActionTimerTicks(X18AIComponent.DEEP_CAVE_BLACKOUT_DURATION);
                 ai.setCurrentState(X18State.DEEP_CAVE_BLACKOUT);
 
-                // Show black screen overlay â€” try playerRef lookup, then brute-force all
+                // Show black screen overlay - try playerRef lookup, then brute-force all
                 // players
                 PlayerRef playerRef = findPlayerRef(world, target.ref);
                 if (playerRef == null && world != null && world.getPlayerRefs() != null) {
@@ -832,19 +838,19 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 } else {
                     log(Level.WARNING, "[AI] Could not find playerRef to show black screen! "
                             + "Safety timer still armed (" + ai.getBlackScreenCloseTicks() + "t) "
-                            + "â€” state will advance normally.");
+                            + "- state will advance normally.");
                 }
             }
         }
     }
 
     /**
-     * DEEP_CAVE_BLACKOUT â€” blackout overlay + teleport + release.
+     * DEEP_CAVE_BLACKOUT - blackout overlay + teleport + release.
      *
      * Sub-phase 0 (BLACKOUT):
      * Opaque black screen shown. Player is still immobilized at the grab
      * origin. When the blackout timer expires, teleport the player to a
-     * safe location â‰¥30 blocks away within the cave system, then advance
+     * safe location >=30 blocks away within the cave system, then advance
      * to sub-phase 1.
      *
      * Sub-phase 1 (FADE/RELEASE):
@@ -860,14 +866,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         int subPhase = ai.getGrabSubPhase();
 
         if (subPhase == 0) {
-            // â”€â”€ BLACKOUT PHASE: player frozen, screen black â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- BLACKOUT PHASE: player frozen, screen black ------------------
 
             // If player left cave mid-blackout, force-close the screen immediately
             // and advance to fade phase. Without the explicit close here the screen
             // would stay open because the normal fade path needs target != null.
             if (target == null) {
                 log(Level.WARNING,
-                        "[AI] Blackout phase: player left cave â€” force-closing screen and advancing to fade.");
+                        "[AI] Blackout phase: player left cave - force-closing screen and advancing to fade.");
                 forceCloseBlackScreen(ai, world, null, store);
                 ai.setGrabSubPhase(1);
                 ai.setActionTimerTicks(X18AIComponent.DEEP_CAVE_BLACKOUT_FADE_DURATION);
@@ -880,7 +886,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             target.tf.teleportPosition(grabOrigin);
 
             if (ai.getActionTimerTicks() <= 0) {
-                // Blackout timer expired â€” teleport player
+                // Blackout timer expired - teleport player
                 Vector3d teleportDest = findDeepCaveTeleportPosition(world, grabOrigin);
                 if (teleportDest != null) {
                     target.tf.teleportPosition(teleportDest);
@@ -901,9 +907,9 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             }
 
         } else {
-            // â”€â”€ FADE PHASE: vision gradually returning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // -- FADE PHASE: vision gradually returning -----------------------
             if (ai.getActionTimerTicks() <= 0) {
-                // Close black screen â€” force all strategies
+                // Close black screen - force all strategies
                 forceCloseBlackScreen(ai, world, target, store);
                 log(Level.INFO, "[AI] Blackout fade complete. Shutting down X_18 for day.");
                 ai.setGrabSubPhase(0);
@@ -918,8 +924,8 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
      * DEEP_CAVE_GRAB_TELEPORT_MIN_DIST
      * blocks from the origin, up to DEEP_CAVE_GRAB_TELEPORT_MAX_DIST.
      *
-     * Strategy: tries 120 random directions at distances 30â€“50 blocks from origin.
-     * Each candidate is floor-scanned (Â±10 vertical) to find a walkable position
+     * Strategy: tries 120 random directions at distances 30-50 blocks from origin.
+     * Each candidate is floor-scanned (+/-10 vertical) to find a walkable position
      * that is still underground (below CAVE_EXIT_Y) and has a cave chamber.
      */
     private Vector3d findDeepCaveTeleportPosition(World world, Vector3d origin) {
@@ -935,7 +941,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             double cx = origin.x() + Math.sin(angle) * dist;
             double cz = origin.z() + Math.cos(angle) * dist;
 
-            // Scan vertical Â±10 blocks around origin Y to find a walkable floor
+            // Scan vertical +/-10 blocks around origin Y to find a walkable floor
             Vector3d found = findFloorAt(world, cx, origin.y(), cz, 10);
             if (found == null)
                 continue;
@@ -1035,6 +1041,36 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         }
     }
 
+    /** Keeps the pooled X_18 harmless on GHOST_CAVE and SILENT_CAVE days. */
+    private void suppressNonRealCaveDay(X18AIComponent ai, TransformComponent x18tf,
+            X18CaveDayScheduler.CaveDayMode mode) {
+        lookExposure = 0;
+        lookExposureLurk = 0;
+        playerWasInCave = false;
+        playerCaveConfirmed = false;
+        lastPlayerPos = null;
+        ai.resetDeepCaveDwell();
+        ai.setCurrentState(X18State.HIDDEN);
+        ai.setActionTimerTicks(0);
+        ai.setDamageDone(false);
+        ai.setIgnoreStillnessOnce(false);
+        ai.setSpawnCooldownTicks(X18AIComponent.POST_APPEARANCE_COOLDOWN);
+
+        double lx = ai.getLastKnownPlayerX();
+        double lz = ai.getLastKnownPlayerZ();
+        if (lx == 0.0 && lz == 0.0) {
+            Vector3d cur = x18tf.getPosition();
+            lx = cur.x();
+            lz = cur.z();
+        }
+        x18tf.teleportPosition(new Vector3d(lx, POOL_HIDE_Y, lz));
+
+        if (lastSuppressedCaveMode != mode) {
+            lastSuppressedCaveMode = mode;
+            log(Level.INFO, "[AI] Cave day mode " + mode
+                    + " active. Real X_18 appearances suppressed.");
+        }
+    }
     /**
      * Shuts down the X_18 for the rest of the day after a deep cave event.
      * Hides underground and sets an extremely long cooldown that effectively
@@ -1044,7 +1080,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         lookExposure = 0;
         lookExposureLurk = 0;
 
-        // Always force-close the black screen â€” even if the timer already expired,
+        // Always force-close the black screen - even if the timer already expired,
         // the screen may still be open if a previous close attempt silently failed.
         if (blackScreenPlayerRef != null && blackScreenStore != null) {
             try {
@@ -1069,7 +1105,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         ai.setCurrentState(X18State.HIDDEN);
         ai.setActionTimerTicks(0);
         ai.setDamageDone(false);
-        // Very long cooldown â€” effectively disabled until next day
+        // Very long cooldown - effectively disabled until next day
         // 72000 ticks = 1 hour. resetDailyEvent() clears this on day transition.
         ai.setSpawnCooldownTicks(72000);
         ai.setDeepCaveEventFiredToday(true);
@@ -1101,7 +1137,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                     if (isDeepCaveBlock(id)) {
                         caveBlockCount++;
                         if (caveBlockCount >= X18AIComponent.DEEP_CAVE_BLOCK_THRESHOLD) {
-                            return true; // early exit â€” confirmed
+                            return true; // early exit - confirmed
                         }
                     }
                 }
@@ -1118,11 +1154,11 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     private boolean isDeepCaveBlock(String id) {
         if (id.isEmpty())
             return false;
-        // Rock* â€” covers Rock_Stone, Rock_Stone_Cobble, Rock_Volcanic, Rock_Basalt,
+        // Rock* - covers Rock_Stone, Rock_Stone_Cobble, Rock_Volcanic, Rock_Basalt,
         // Rock_Quartzite, etc. (from Stone.json / Volcanic.json / Rock.json)
         if (id.startsWith("rock"))
             return true;
-        // Ore* â€” covers Ore_Gold, Ore_Iron, etc. (from Ores.json)
+        // Ore* - covers Ore_Gold, Ore_Iron, etc. (from Ores.json)
         if (id.startsWith("ore"))
             return true;
         // Lava / Lava_Source (from Fluids/Lava.json, Fluids/Lava_Source.json)
@@ -1135,7 +1171,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // HELPERS â€” state transitions
+    // HELPERS - state transitions
     // =========================================================================
 
     /** Transition to VANISHING state (actual hide happens next tick). */
@@ -1187,15 +1223,15 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // POSITION SEARCH â€” STALK (close, 7â€“11 blocks, behind player)
+    // POSITION SEARCH - STALK (close, 7-11 blocks, behind player)
     //
-    // Para cada candidato horizontal faz scan vertical Â±8 blocos em volta
-    // do Y do player â€” cobre a maioria das morfologias de caverna.
-    // TrÃªs tiers garantem que sempre encontra posiÃ§Ã£o em caverna vÃ¡lida.
+    // Para cada candidato horizontal faz scan vertical +/-8 blocos em volta
+    // do Y do player - cobre a maioria das morfologias de caverna.
+    // Tres tiers garantem que sempre encontra posicao em caverna valida.
     //
     // v0.3.5: Added hasCaveChamber() check to avoid spawns in tiny crevices
     // or inside walls. Also validates the position is actually in a cave-like
-    // environment (at least 3Ã—3Ã—2 passable space).
+    // environment (at least 3x3x2 passable space).
     // =========================================================================
 
     private Vector3d findSpawnPosition(World world, TransformComponent playerTf) {
@@ -1215,14 +1251,14 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             if (i < 48) {
                 angle = playerYaw + Math.PI + randomRange(-2.0, 2.0); // bias behind
             } else {
-                angle = rng.nextDouble() * Math.PI * 2.0; // 360Â° fallback
+                angle = rng.nextDouble() * Math.PI * 2.0; // 360 deg fallback
             }
             double dist = randomRange(MIN_SPAWN_DIST, MAX_SPAWN_DIST);
 
             double cx = playerPos.x() + Math.sin(angle) * dist;
             double cz = playerPos.z() + Math.cos(angle) * dist;
 
-            // Scan vertical Â±8 blocks around the player's Y
+            // Scan vertical +/-8 blocks around the player's Y
             Vector3d c = findFloorAt(world, cx, playerPos.y(), cz, 8);
             if (c == null)
                 continue;
@@ -1271,15 +1307,15 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             return t3Best;
         }
 
-        log(Level.WARNING, "[AI] STALK search null â€” no walkable floor.");
+        log(Level.WARNING, "[AI] STALK search null - no walkable floor.");
         return null;
     }
 
     // =========================================================================
-    // POSITION SEARCH â€” LURK (same-level cave, 10â€“18 blocks away)
+    // POSITION SEARCH - LURK (same-level cave, 10-18 blocks away)
     //
     // v0.3.5 REWRITE: no longer scans deep below the player. Instead finds
-    // positions at the SAME Y level (Â±LURK_Y_TOLERANCE blocks) with a clear
+    // positions at the SAME Y level (+/-LURK_Y_TOLERANCE blocks) with a clear
     // line-of-sight to the player through passable blocks.
     //
     // This ensures the lurker is visible in the same cave corridor/chamber
@@ -1287,10 +1323,10 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     // underground.
     //
     // Prefers:
-    // â€¢ Positions with line-of-sight to the player (REQUIRED)
-    // â€¢ Cave wall adjacency (atmospheric darkness)
-    // â€¢ Positions in the player's rough forward arc (they look that way)
-    // â€¢ Greater horizontal distance (more eerie)
+    // * Positions with line-of-sight to the player (REQUIRED)
+    // * Cave wall adjacency (atmospheric darkness)
+    // * Positions in the player's rough forward arc (they look that way)
+    // * Greater horizontal distance (more eerie)
     //
     // Returns null if no valid same-level LOS position can be found.
     // =========================================================================
@@ -1304,7 +1340,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
         for (int i = 0; i < 80; i++) {
             // First 40: bias loosely toward the player's forward arc so they
-            // naturally see it if they look ahead. Last 40: full 360Â°.
+            // naturally see it if they look ahead. Last 40: full 360 deg.
             double angle;
             if (i < 40) {
                 angle = playerYaw + randomRange(-1.4, 1.4);
@@ -1316,7 +1352,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             double cx = playerPos.x() + Math.sin(angle) * horizDist;
             double cz = playerPos.z() + Math.cos(angle) * horizDist;
 
-            // Scan Â±LURK_Y_TOLERANCE blocks around the player's Y level
+            // Scan +/-LURK_Y_TOLERANCE blocks around the player's Y level
             Vector3d found = findFloorAt(world, cx, playerPos.y(), cz, LURK_Y_TOLERANCE);
             if (found == null)
                 continue;
@@ -1353,7 +1389,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * Finds a walkable floor at (cx, ?, cz) by scanning Â±yRange blocks around
+     * Finds a walkable floor at (cx, ?, cz) by scanning +/-yRange blocks around
      * baseY. Tries exact baseY first, then alternates down/up.
      * Returns null if no walkable block is found in range.
      */
@@ -1424,7 +1460,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             return 30;
         if (yaw > YAW_HALF)
             return 10;
-        return -80; // inside FOV â€” heavy penalty
+        return -80; // inside FOV - heavy penalty
     }
 
     // =========================================================================
@@ -1441,10 +1477,6 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         double dy = targetPos.y() - p.y();
         double dz = targetPos.z() - p.z();
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        // FIX #25: previously returned true when dist < 0.001, which caused
-        // lookExposure to accumulate during the grab event (where X-18 and
-        // the player are at the same position) and could abort the grab
-        // mid-animation. Now returns false for the overlap case, matching
         // X17AISystem.isPlayerWatchingX17 and X17ShadowsSystem.isPlayerWatchingShadow.
         if (dist < 0.001) {
             return false;
@@ -1463,7 +1495,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     /**
      * Player is considered "in cave" using hysteresis:
-     * - Enters cave when y â‰¤ CAVE_ENTER_Y (85)
+     * - Enters cave when y <= CAVE_ENTER_Y (85)
      * - Exits cave when y > CAVE_EXIT_Y (95)
      * - Between 85 and 95: maintains previous state (no flicker)
      *
@@ -1491,7 +1523,6 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
      * Finds the nearest cave-dwelling player relative to a reference position.
      * Returns null if none.
      *
-     * FIX #8: previously used tf.getPosition().length() (distance from world
      * origin) as the distance proxy, which broke the "nearest" semantics on
      * multi-player servers - the X-18 could lock onto a player who is far away
      * in absolute coordinates. Now takes a reference position (typically the
@@ -1551,7 +1582,6 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             name = "world_" + System.identityHashCode(world);
         }
 
-        // FIX #12: per-world singleton via ConcurrentHashMap.
         Long current = activeBirthByWorld.putIfAbsent(name, myBirthTimestamp);
         if (current == null) {
             // We were the first to register for this world.
@@ -1617,9 +1647,6 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void faceToward(TransformComponent tf, Vector3d target) {
-        // FIX #26: delegate to the shared FacingUtil helper. X-18 model faces
-        // -Z by default (opposite of X-17), so orientOffset = PI. This was
-        // previously an inline atan2 + PI that was inconsistent with
         // X17AISystem.faceTarget (which used 0.0 offset). Both now share
         // FacingUtil.rotationToFace as the single source of truth.
         Vector3d pos = tf.getPosition();
@@ -1646,7 +1673,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     /**
-     * Checks if a position has a proper cave chamber: at least a 3Ã—3Ã—2 area
+     * Checks if a position has a proper cave chamber: at least a 3x3x2 area
      * of passable blocks centred on the position. Prevents X_18 from spawning
      * inside tiny crevices, single-block gaps, or partially inside walls.
      */
@@ -1654,7 +1681,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         int cx = (int) Math.floor(pos.x());
         int cy = (int) Math.floor(pos.y());
         int cz = (int) Math.floor(pos.z());
-        // Check a 3Ã—2Ã—3 volume (x-1..x+1, y..y+1, z-1..z+1)
+        // Check a 3x2x3 volume (x-1..x+1, y..y+1, z-1..z+1)
         int passableCount = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {

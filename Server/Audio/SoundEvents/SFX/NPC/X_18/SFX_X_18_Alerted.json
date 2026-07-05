@@ -2,6 +2,7 @@
     "Layers": [
         {
             "Files": [
+                "Sounds/NPC/X_18/CloseEnough.ogg",
                 "Sounds/NPC/X_18/NotAlone.ogg"
             ],
             "RandomSettings": {
@@ -10,7 +11,7 @@
                 "MinPitch": -1.0,
                 "MaxPitch": 0.5
             },
-            "Probability": 20
+            "Probability": 15
         }
     ],
     "Volume": 4.0,

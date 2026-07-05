@@ -4,16 +4,10 @@ import org.joml.Vector3d;
 import com.hypixel.hytale.math.vector.Rotation3f;
 
 /**
- * FacingUtil - v0.3.5
+ * FacingUtil - v0.3.6
  *
  * Shared yaw-computation helper for the X-17 and X-18 AI systems.
  *
- * FIX #26: X17AISystem.faceTarget and X18AISystem.faceToward previously
- * used inconsistent yaw conventions - X-17 used atan2(dx, dz) with no
- * offset, X-18 used the same value plus PI. Whether the offset is needed
- * depends on the model's default orientation. This utility centralises
- * the convention so both systems can share a single source of truth and
- * the offset is documented per NPC role.
  */
 public final class FacingUtil {
 

@@ -8,13 +8,13 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X18AIComponent — v0.3.5
+ * X18AIComponent - v0.3.6
  *
  * Runtime state for the X_18 cave stalker. All timing constants live here so
  * X18AISystem is free of magic numbers.
  *
  * TIMING DESIGN
- * ─────────────
+ * -------------
  * After each appearance the entity hides underground and waits
  * POST_APPEARANCE_COOLDOWN ticks before trying to reposition again.
  * This creates the "suspense gap" the player feels between sightings.
@@ -22,15 +22,14 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * A separate SEARCH_RETRY_COOLDOWN is used when the position search
  * fails so the system retries quickly without blocking the longer gap.
  *
- * The grab/charge events happen via the deep cave dwell system (40s below
+ * The grab/charge events happen via the deep cave dwell system (120s below
  * Y=60) and are locked out for the rest of the current night. The standard
  * CHARGING state can also trigger from STALK with a 25% chance (once per
  * night). attackUsedThisSession resets on each night transition.
  *
- * v0.3.5 CHANGES (bug fixes)
- * ──────────────────────────
+ * --------------------------
  * - DEEP_CAVE_Y_THRESHOLD raised from 40 to 60 (reachable by normal caves)
- * - DEEP_CAVE_DWELL_REQUIRED reduced from 2000 to 800 ticks (40s vs 100s)
+ * - DEEP_CAVE_DWELL_REQUIRED balanced to 2400 ticks (about 120s)
  * - DEEP_CAVE_GRAB_PCT raised from 30 to 50 (equal 50/50 split)
  * - Removed incorrect HIDDEN block that prevented stalk while dwell accumulates
  * - attackUsedThisSession now resets on night transition (once-per-night
@@ -39,7 +38,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  */
 public class X18AIComponent implements Component<EntityStore> {
 
-    // ── X18 State Machine ────────────────────────────────────────────────────
+    // -- X18 State Machine ----------------------------------------------------
     public enum X18State {
         HIDDEN,
         STALKING,
@@ -56,7 +55,7 @@ public class X18AIComponent implements Component<EntityStore> {
         }
     }
 
-    // ── Grab sub-phases ──────────────────────────────────────────────────────
+    // -- Grab sub-phases ------------------------------------------------------
     // DEEP_CAVE_GRABBING uses a sub-phase counter to sequence:
     // 0 = approaching (ChargeAttack animation, high-speed move toward player)
     // 1 = contact made, playing Grab animation, player immobilized
@@ -76,10 +75,10 @@ public class X18AIComponent implements Component<EntityStore> {
     public static final int DEEP_CAVE_GRAB_TELEPORT_MAX_DIST = 50;
 
     // -------------------------------------------------------------------------
-    // Timing constants (all in ticks; 20 ticks ≈ 1 second)
+    // Timing constants (all in ticks; 20 ticks ~ 1 second)
     // -------------------------------------------------------------------------
 
-    /** How long X_18 is visible and staring — STALK (~16 s). */
+    /** How long X_18 is visible and staring - STALK (~16 s). */
     public static final int STALK_DURATION_TICKS = 320;
 
     /** How many ticks the charge lasts before auto-vanish (5 s). */
@@ -87,28 +86,28 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /**
      * Cooldown after EACH appearance before the next reposition attempt.
-     * 1100 ticks = 55 s.
+     * 2400 ticks = 120 s.
      */
-    public static final int POST_APPEARANCE_COOLDOWN = 1100;
+    public static final int POST_APPEARANCE_COOLDOWN = 2400;
 
     /**
      * Shorter cooldown used after a charge attack so the X_18 returns with
-     * a sense of aggression. 550 ticks = 27.5 s.
+     * a sense of aggression. 1800 ticks = 90 s.
      */
-    public static final int POST_CHARGE_COOLDOWN = 550;
+    public static final int POST_CHARGE_COOLDOWN = 1800;
 
     /**
      * Quick retry when the position search fails (no walkable floor found).
-     * 120 ticks = 6 s.
+     * 300 ticks = 15 s.
      */
-    public static final int SEARCH_RETRY_COOLDOWN = 120;
+    public static final int SEARCH_RETRY_COOLDOWN = 300;
 
     /**
      * Initial delay after the entity first spawns into the world (pooled at
      * y = POOL_HIDE_Y). Gives the game a moment to settle before the first
-     * appearance. 200 ticks = 10 s.
+     * appearance. 600 ticks = 30 s.
      */
-    public static final int INITIAL_SPAWN_COOLDOWN = 200;
+    public static final int INITIAL_SPAWN_COOLDOWN = 600;
 
     /**
      * How long X_18 lurks in the cave before giving up (if never spotted).
@@ -118,31 +117,31 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /**
      * Maximum Y offset from the player for a valid lurk position.
-     * v0.3.5: changed from 8 (deep below) to 3 (same level ± a few blocks)
+     * v0.3.5: changed from 8 (deep below) to 3 (same level +/- a few blocks)
      * so the lurker spawns in the same cave channels as the player.
      */
     public static final int LURK_Y_TOLERANCE = 3;
 
     /**
-     * Horizontal distance band for lurk spawn — 10 to 18 blocks (cave corridors).
+     * Horizontal distance band for lurk spawn - 10 to 18 blocks (cave corridors).
      */
     public static final double LURK_MIN_DIST = 10.0;
     public static final double LURK_MAX_DIST = 18.0;
 
     /**
-     * Probability (out of 100) that a HIDDEN→visible transition becomes a
-     * LURK instead of a normal STALK. 40% — STALK is now the dominant mode.
+     * Probability (out of 100) that a HIDDEN->visible transition becomes a
+     * LURK instead of a normal STALK. 40% - STALK is now the dominant mode.
      */
     public static final int LURK_CHANCE_PCT = 40;
 
     /**
-     * Ticks of eye-contact to trigger vanish during LURK — 5 s.
+     * Ticks of eye-contact to trigger vanish during LURK - 5 s.
      * v0.3.5: increased to 100 so the player actually registers seeing it.
      */
     public static final int LURK_EXPOSURE_TICKS = 100;
 
     /**
-     * Ticks of eye-contact to trigger vanish during STALK — 5 s.
+     * Ticks of eye-contact to trigger vanish during STALK - 5 s.
      * v0.3.5: increased to 100 so the player gets a brief glimpse.
      */
     public static final int STALK_EXPOSURE_TICKS = 100;
@@ -156,30 +155,30 @@ public class X18AIComponent implements Component<EntityStore> {
      * is slowly moving (e.g. looking around after a charge attack).
      */
     public static final double STILLNESS_THRESHOLD = 0.10;
-    public static final int STILLNESS_TICKS_REQUIRED = 100;
+    public static final int STILLNESS_TICKS_REQUIRED = 160;
 
-    // ── Cave detection hysteresis ────────────────────────────────────────────
+    // -- Cave detection hysteresis --------------------------------------------
     public enum CaveState {
         OUTSIDE,
         INSIDE
     }
 
-    // Player "enters" cave at y ≤ CAVE_ENTER_Y, "exits" at y > CAVE_EXIT_Y.
+    // Player "enters" cave at y <= CAVE_ENTER_Y, "exits" at y > CAVE_EXIT_Y.
     // The 10-block gap prevents false session resets on ramps/transitions.
     public static final double CAVE_ENTER_Y = 90.0;
     public static final double CAVE_EXIT_Y = 99.0;
 
-    // ── Deep Cave Event constants ────────────────────────────────────────────
+    // -- Deep Cave Event constants --------------------------------------------
     // Triggered when the player is below DEEP_CAVE_Y_THRESHOLD (absolute Y)
     // for DEEP_CAVE_DWELL_REQUIRED ticks.
     //
     // Two rolls:
-    // 50% → guaranteed ChargeAttack (DEEP_CAVE_CHARGING)
-    // 50% → instant approach + Grab animation (DEEP_CAVE_GRABBING)
+    // 50% -> guaranteed ChargeAttack (DEEP_CAVE_CHARGING)
+    // 50% -> instant approach + Grab animation (DEEP_CAVE_GRABBING)
     // After either event fires, the X_18 shuts down until the next night.
 
     /**
-     * Absolute Y threshold — player must be below this Y to qualify.
+     * Absolute Y threshold - player must be below this Y to qualify.
      * v0.3.5: raised from 40 to 60 so normal cave exploration triggers
      * the event. Y=40 was unreachably deep for most cave systems.
      */
@@ -187,14 +186,14 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /**
      * Ticks the player must dwell below DEEP_CAVE_Y_THRESHOLD.
-     * v0.3.5: reduced from 2000 (100s) to 800 (40s). The original value
+     * v0.3.5: balanced to 2400 ticks (about 120s). The previous testing value
      * was so long that any brief movement above threshold would reset the
      * counter before the event ever fired.
      */
-    public static final int DEEP_CAVE_DWELL_REQUIRED = 800;
+    public static final int DEEP_CAVE_DWELL_REQUIRED = 2400;
 
     /**
-     * Probability (0–100) that the triggered event is a Grab instead of Charge.
+     * Probability (0-100) that the triggered event is a Grab instead of Charge.
      * 50% Grab, 50% Charge.
      * v0.3.5: raised from 30 to 50 to give Grab equal weight.
      */
@@ -226,7 +225,7 @@ public class X18AIComponent implements Component<EntityStore> {
     }
 
     // -------------------------------------------------------------------------
-    // Codec — persists runtime state across ticks
+    // Codec - persists runtime state across ticks
     // -------------------------------------------------------------------------
 
     public static final BuilderCodec<X18AIComponent> CODEC = BuilderCodec
@@ -300,11 +299,11 @@ public class X18AIComponent implements Component<EntityStore> {
     private double lastKnownPlayerZ = 0.0;
     /**
      * Consecutive ticks the player has been below STILLNESS_THRESHOLD speed.
-     * Not persisted — resets to 0 on reload (safe: player must re-earn stillness).
+     * Not persisted - resets to 0 on reload (safe: player must re-earn stillness).
      */
     private int stillnessTicks = 0;
     /**
-     * When true, the next HIDDEN→visible transition skips the stillness check.
+     * When true, the next HIDDEN->visible transition skips the stillness check.
      * Set after a charge attack so the X_18 is guaranteed to re-appear even if
      * the player is running in panic. Consumed (set false) on use.
      */
@@ -318,14 +317,14 @@ public class X18AIComponent implements Component<EntityStore> {
     private boolean deepCaveEventFiredToday = false;
 
     /**
-     * Accumulated ticks the player has been in the deep-cave zone (depth 20–40)
+     * Accumulated ticks the player has been in the deep-cave zone (depth 20-40)
      * with valid cave blocks nearby. Resets when the player leaves the zone.
      */
     private int deepCaveDwellTicks = 0;
 
     /**
      * Sub-phase counter for DEEP_CAVE_GRABBING and DEEP_CAVE_BLACKOUT states.
-     * Not persisted — transient event state that resets on reload.
+     * Not persisted - transient event state that resets on reload.
      */
     private int grabSubPhase = 0;
 
@@ -341,7 +340,7 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /**
      * Ticks remaining before the black screen UI auto-closes.
-     * Transient — not persisted. Set after grab event completes.
+     * Transient - not persisted. Set after grab event completes.
      */
     private int blackScreenCloseTicks = 0;
 
@@ -515,7 +514,7 @@ public class X18AIComponent implements Component<EntityStore> {
         deepCaveEventFiredToday = false;
     }
 
-    // ── ignoreStillnessOnce ───────────────────────────────────────────────────
+    // -- ignoreStillnessOnce ---------------------------------------------------
     public boolean isIgnoreStillnessOnce() {
         return ignoreStillnessOnce;
     }
@@ -524,7 +523,7 @@ public class X18AIComponent implements Component<EntityStore> {
         ignoreStillnessOnce = v;
     }
 
-    // ── Deep Cave Event ──────────────────────────────────────────────────────
+    // -- Deep Cave Event ------------------------------------------------------
 
     public boolean isDeepCaveEventFiredToday() {
         return deepCaveEventFiredToday;
@@ -567,7 +566,7 @@ public class X18AIComponent implements Component<EntityStore> {
         deepCaveDwellTicks = 0;
     }
 
-    // ── Grab Sub-Phase ──────────────────────────────────────────────────────
+    // -- Grab Sub-Phase ------------------------------------------------------
 
     public int getGrabSubPhase() {
         return grabSubPhase;
@@ -613,12 +612,12 @@ public class X18AIComponent implements Component<EntityStore> {
         grabStandZ = z;
     }
 
-    // ── Compatibility stub ────────────────────────────────────────────────────
+    // -- Compatibility stub ----------------------------------------------------
     // X18CaveSpawnSystem calls setHitsTaken(0) on the initial attach.
     // The field is no longer meaningful (hits-before-vanish logic was removed),
     // but the stub keeps the spawn system compiling without modification.
     public void setHitsTaken(int v) {
-        /* no-op — field removed in v0.3.5 */ }
+        /* no-op - field removed in v0.3.5 */ }
 
     @Override
     public Component<EntityStore> clone() {

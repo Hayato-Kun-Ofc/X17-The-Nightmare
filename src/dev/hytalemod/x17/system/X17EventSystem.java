@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.3.5
+ * X17EventSystem - v0.3.6
  */
 public class X17EventSystem {
 
@@ -322,8 +322,6 @@ public class X17EventSystem {
         try {
             plugin.log(Level.INFO, "Player ready. Checking welcome UI...");
 
-            // FIX #2: PlayerReadyEvent.getPlayerRef() returns the entity Ref
-            // (com.hypixel.hytale.component.Ref), NOT a PlayerRef component.
             // The previous code called event.getPlayerRef().getStore() and then
             // passed the same Ref to store.getComponent(..., PlayerRef.getComponentType())
             // which returned null because the entity ref is not itself a PlayerRef.
@@ -369,7 +367,6 @@ public class X17EventSystem {
             plugin.log(Level.INFO, "Showing welcome UI to " + uuid + " in: " + worldName);
             X17WelcomePage.showTo(playerRef, store);
         } catch (Exception e) {
-            // FIX #21: route through logException instead of printStackTrace.
             plugin.logException(Level.SEVERE, "Error in PlayerReady", e);
         }
     }
@@ -539,7 +536,6 @@ public class X17EventSystem {
             }
             return true;
         } catch (Exception e) {
-            // FIX #4: unwrap InvocationTargetException so the real cause is logged.
             Throwable cause = X17Plugin.unwrapReflective(e);
             plugin.logException(Level.WARNING,
                     "[Scheduler] Failed to spawn X17 via Java", cause);
@@ -599,7 +595,6 @@ public class X17EventSystem {
         double spread = 2.6;
         double angle = center + randomRange(-spread / 2.0, spread / 2.0);
         double distance = randomRange(42.0, 64.0);
-        // FIX v0.3.5: was Math.cos/Math.sin (X/Z) - flipped 90 deg vs rest of mod.
         // Convention throughout is sin(yaw) -> X, cos(yaw) -> Z (matches faceTarget atan2(dx,dz)).
         return new Vector3d(
                 playerPos.x() + Math.sin(angle) * distance,
