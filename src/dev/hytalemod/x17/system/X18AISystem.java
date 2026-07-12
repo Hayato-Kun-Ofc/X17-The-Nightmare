@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /*
- * X_18 - Cave Stalker AI - v0.3.6
+ * X_18 - Cave Stalker AI - v0.3.7
  *
  * -- DESIGN REQUIREMENTS ------------------------------------------------------
  *
@@ -43,19 +43,19 @@ import java.util.logging.Level;
  *     Y level (+/-3 blocks) with line-of-sight to the player.
  *
  *  3. TIMING (20 ticks = 1 second):
- *       * Stalk duration  : ~8 s (160 ticks) - player feels watched.
+ *       * Stalk duration  : ~16 s (320 ticks) - player feels watched.
  *       * Lurk duration   : ~10 s (200 ticks) - distant, silent watcher.
- *       * Post-appearance gap : 15 s (300 ticks) - suspense between sightings.
- *       * Post-charge gap :  7.5 s (150 ticks) - X_18 returns aggressively.
- *       * Search retry    :  3 s  (60 ticks) - fast retry if no floor found.
+ *       * Post-appearance gap : 120 s (2400 ticks) - suspense between sightings.
+ *       * Post-charge gap : 90 s (1800 ticks) - X_18 returns aggressively.
+ *       * Search retry    : 15 s (300 ticks) - retry if no floor found.
  *
  *  4. BEHAVIOUR:
  *       * While STALKING: face player directly, accumulate look-exposure
- *         (>=8 ticks of eye-contact). On exposure OR natural timer expiry ->
- *           95% VANISH, 5% CHARGE (attack).
+ *         (>=100 ticks / ~5 s of eye-contact). On exposure OR natural timer
+ *         expiry -> 75% VANISH, 25% CHARGE (attack).
  *       * While LURKING: 10-18 blocks away at the same cave level, facing
- *         the player silently with line-of-sight. Vanishes on >=10 ticks of
- *         eye-contact OR timer expiry. No charge possible from LURK.
+ *         the player silently with line-of-sight. Vanishes on >=100 ticks
+ *         (~5 s) of eye-contact OR timer expiry. No charge possible from LURK.
  *       * ~40% of appearances become LURK instead of STALK.
  *       * LURK only triggers if a same-level position with line-of-sight is
  *         found; falls back to normal STALK if not.
@@ -82,6 +82,21 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     private static final double MIN_SPAWN_DIST = 7.0;
     private static final double MAX_SPAWN_DIST = 11.0;
     private static final double POOL_HIDE_Y = 2.0;
+
+    // v0.3.7d FIX: POOL_HIDE_Y is an ABSOLUTE Y. STALK searches scan
+    // playerY +/-8 (findSpawnPosition), so in very low sections of a cave
+    // X_18's actual Y when VANISHING begins can already be below 2.0. The
+    // Despawn animation never moves the real transform (it's a pure visual
+    // sink baked into the .blockyanim clip) - the transform only moves once,
+    // at the END of the buffer, when hideUnderground()/shutdownForDay()/
+    // suppressNonRealCaveDay() teleport straight to POOL_HIDE_Y. If current Y
+    // was already < 2.0, that teleport goes UP relative to where the player
+    // last saw it, producing a visible "pop back up, then vanish" glitch
+    // instead of a clean sink. safeHideY() below clamps the destination to
+    // always be at or below X_18's current Y (with margin), so the final
+    // teleport can only ever go down or stay level - never up.
+    private static final double HIDE_Y_MARGIN = 3.0;
+    private static final double WORLD_FLOOR_SAFETY_Y = 0.5;
 
     // -- Night time range -----------------------------------------------------
     private static final double NIGHT_START = 0.792;
@@ -111,14 +126,24 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     private static final double CHARGE_SPEED = 0.60;
     private static final double PROXIMITY_VANISH_DIST = 2.5;
 
+    /**
+     * Render buffer (ticks) given to Despawn.blockyanim before X_18 is
+     * actually teleported underground. Despawn.blockyanim has duration=60
+     * (same as Alerted.blockyanim), and the native role AI's own Vanish
+     * state waited 1.5s (30 ticks @ 20 tps) after playing a duration=60 clip
+     * before removing the entity - so 30 ticks is the proven amount of time
+     * this length of animation needs to actually be visible.
+     * 
+     */
+    private static final int DESPAWN_ANIM_BUFFER_TICKS = 15;
+
     // -- Singleton guard -------------------------------------------------------
     // ConcurrentHashMap. The previous static fields were shared across all
     // worlds, so on a multi-world server world B's tick overwrote world A's
     // singleton lock. The map keyed by world name gives each world its own
     // lock entry. Value is the birth timestamp of the system instance that
     // owns the singleton (survives entity re-creation after server reload).
-    private static final java.util.concurrent.ConcurrentHashMap<String, Long> activeBirthByWorld =
-            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.concurrent.ConcurrentHashMap<String, Long> activeBirthByWorld = new java.util.concurrent.ConcurrentHashMap<>();
 
     private long myBirthTimestamp = -1L; // set on first valid tick
 
@@ -304,7 +329,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                     tickStalking(ai, x18tf, world, target);
                     break;
                 case CHARGING:
-                    tickCharging(ai, x18tf, x18Ref, world, target, commandBuffer);
+                    tickCharging(ai, x18tf, x18Ref, world, target, commandBuffer, store);
                     break;
                 case VANISHING:
                     tickVanishing(ai, x18tf, x18Ref, store);
@@ -313,7 +338,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                     tickLurking(ai, x18tf, world, target);
                     break;
                 case DEEP_CAVE_CHARGING:
-                    tickDeepCaveCharging(ai, x18tf, x18Ref, world, target, commandBuffer);
+                    tickDeepCaveCharging(ai, x18tf, x18Ref, world, target, commandBuffer, store);
                     break;
                 case DEEP_CAVE_GRABBING:
                     tickDeepCaveGrabbing(ai, x18tf, x18Ref, world, target, store);
@@ -505,13 +530,16 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     private void tickCharging(X18AIComponent ai, TransformComponent x18tf,
             Ref<EntityStore> x18Ref, World world, TargetData target,
-            CommandBuffer<EntityStore> commandBuffer) {
+            CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
 
         if (target == null) {
             log(Level.INFO, "[AI] Charge aborted - player left cave.");
             scheduleVanishPostCharge(ai);
             return;
         }
+
+        // Play Charged_Attack animation every tick (idempotent - skips if already set)
+        playStatusAnimation(store, x18Ref, "ChargeAttack");
 
         Vector3d playerPos = target.tf.getPosition();
         faceToward(x18tf, playerPos);
@@ -540,17 +568,51 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     // =========================================================================
     // STATE: VANISHING
-    // Plays the Despawn animation on the first tick, then hides underground.
-    // The one-tick buffer lets the client render the animation start frame
-    // before the entity teleports underground.
+    // Plays the Despawn animation on the first tick, then hides underground
+    // after a 2-tick buffer so the client can render the animation start frame.
     // =========================================================================
 
     private void tickVanishing(X18AIComponent ai, TransformComponent x18tf,
             Ref<EntityStore> x18Ref, Store<EntityStore> store) {
-        // Play despawn animation - wrapped so a missing animation never crashes
-        playStatusAnimation(store, x18Ref, "Despawn");
-
-        hideUnderground(ai, x18tf);
+        if (!ai.isDespawnAnimStarted()) {
+            // First tick of VANISHING: play Despawn animation and start buffer.
+            // v7 FIX: this used to check/set damageDone, which had already
+            // been forced to true by tickCharging() on a successful hit (damage
+            // applied -> setDamageDone(true) -> scheduleVanishPostCharge()).
+            // That made this branch skip on the very first tick after a
+            // successful charge, so the Despawn animation never played and the
+            // entity jumped straight to the buffer-expired branch below in the
+            // same tick. despawnAnimStarted is a dedicated flag so it can never
+            // be pre-set by unrelated combat logic.
+            playStatusAnimation(store, x18Ref, "Despawn");
+            ai.setDespawnAnimStarted(true);
+            // v0.3.7c FIX: was 2 ticks (0.1s) - nowhere near enough for the
+            // animation to actually play. Despawn.blockyanim has duration=60
+            // with its "sink into the ground" keyframe at time=45, and its
+            // hold-frame is only reached at the very end. The native role AI
+            // (Template_X_18.json's old Vanish state) played the same-duration
+            // Alerted.blockyanim and waited a full 1.5s (30 ticks) before
+            // actually removing the entity - that's the proven, designer-picked
+            // amount of time a duration=60 clip needs to read. 2 ticks was
+            // teleporting X_18 underground before the animation had even left
+            // its first frame, so it looked like it never played at all.
+            ai.setActionTimerTicks(DESPAWN_ANIM_BUFFER_TICKS);
+            return;
+        }
+        // Buffer expired - actually hide underground
+        if (ai.getActionTimerTicks() <= 0) {
+            ai.setDespawnAnimStarted(false); // reset flag for next cycle
+            if (ai.isPendingDeepCaveShutdown()) {
+                // This vanish cycle was started on behalf of a deep-cave
+                // charge/grab event - finish with the long day-disable
+                // shutdown instead of the normal short-cooldown hide.
+                ai.setPendingDeepCaveShutdown(false);
+                shutdownForDay(ai, x18tf);
+            } else {
+                hideUnderground(ai, x18tf);
+            }
+        }
+        // else: waiting for buffer to tick down (handled by central decrement)
     }
 
     // =========================================================================
@@ -679,12 +741,15 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
      */
     private void tickDeepCaveCharging(X18AIComponent ai, TransformComponent x18tf,
             Ref<EntityStore> x18Ref, World world, TargetData target,
-            CommandBuffer<EntityStore> commandBuffer) {
+            CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
         if (target == null) {
             log(Level.INFO, "[AI] Deep cave charge: player left cave.");
-            shutdownForDay(ai, x18tf);
+            beginDeepCaveDespawn(ai);
             return;
         }
+
+        // Play Charged_Attack animation every tick (idempotent - skips if already set)
+        playStatusAnimation(store, x18Ref, "ChargeAttack");
 
         Vector3d playerPos = target.tf.getPosition();
         faceToward(x18tf, playerPos);
@@ -697,15 +762,18 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         if (!ai.isDamageDone() && dist <= DAMAGE_DIST) {
             applyDamage(commandBuffer, x18Ref, target.ref);
             ai.setDamageDone(true);
-            log(Level.INFO, "[AI] Deep cave charge: damage applied. Shutting down for day.");
-            shutdownForDay(ai, x18tf);
+            log(Level.INFO, "[AI] Deep cave charge: damage applied. Playing Despawn, then shutting down for day.");
+            // v0.3.7 FIX: used to call shutdownForDay() directly here, which
+            // skips the Despawn animation entirely. Route through VANISHING
+            // first so the animation actually plays.
+            beginDeepCaveDespawn(ai);
             return;
         }
 
         // Timer expired - even if missed, shut down
         if (ai.getActionTimerTicks() <= 0) {
-            log(Level.INFO, "[AI] Deep cave charge: timer expired (missed). Shutting down.");
-            shutdownForDay(ai, x18tf);
+            log(Level.INFO, "[AI] Deep cave charge: timer expired (missed). Playing Despawn, then shutting down.");
+            beginDeepCaveDespawn(ai);
         }
     }
 
@@ -714,7 +782,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
      *
      * Sub-phase 0 (APPROACH):
      * X_18 charges toward the player at DEEP_CAVE_GRAB_SPEED using the
-     * ChargeAttack animation. On contact (dist <= DAMAGE_DIST), saves the
+     * Charged_Attack animation. On contact (dist <= DAMAGE_DIST), saves the
      * grab origin position and transitions to sub-phase 1.
      *
      * Sub-phase 1 (GRAB HOLD):
@@ -728,7 +796,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             Store<EntityStore> store) {
         if (target == null) {
             log(Level.INFO, "[AI] Deep cave grab: player left cave.");
-            shutdownForDay(ai, x18tf);
+            beginDeepCaveDespawn(ai);
             return;
         }
 
@@ -738,11 +806,11 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
         int subPhase = ai.getGrabSubPhase();
 
         if (subPhase == 0) {
-            // -- APPROACH: rush toward player with ChargeAttack animation -----
+            // -- APPROACH: rush toward player with Charged_Attack animation -----
             faceToward(x18tf, playerPos);
             double dist = x18tf.getPosition().distance(playerPos);
 
-            // Set ChargeAttack animation on the X_18 entity
+            // Set Charged_Attack animation on the X_18 entity
             playStatusAnimation(store, x18Ref, "ChargeAttack");
 
             if (dist > DAMAGE_DIST) {
@@ -828,7 +896,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 ai.setBlackScreenCloseTicks(
                         X18AIComponent.DEEP_CAVE_BLACKOUT_DURATION
                                 + X18AIComponent.DEEP_CAVE_BLACKOUT_FADE_DURATION + 20);
-                x18tf.teleportPosition(new Vector3d(grabStand.x(), POOL_HIDE_Y, grabStand.z()));
+                x18tf.teleportPosition(new Vector3d(grabStand.x(), safeHideY(x18tf), grabStand.z()));
                 if (playerRef != null) {
                     X18BlackScreenPage.showTo(playerRef, store);
                     blackScreenPlayerRef = playerRef;
@@ -913,6 +981,11 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                 forceCloseBlackScreen(ai, world, target, store);
                 log(Level.INFO, "[AI] Blackout fade complete. Shutting down X_18 for day.");
                 ai.setGrabSubPhase(0);
+                // NOTE: intentionally NOT routed through beginDeepCaveDespawn()/
+                // Despawn animation here. By this point the player was already
+                // teleported DEEP_CAVE_GRAB_TELEPORT_MIN_DIST-MAX_DIST (30-50
+                // blocks) away from the X_18 as part of the blackout sequence,
+                // so there is nobody nearby left to see the animation anyway.
                 shutdownForDay(ai, x18tf);
             }
         }
@@ -1063,7 +1136,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             lx = cur.x();
             lz = cur.z();
         }
-        x18tf.teleportPosition(new Vector3d(lx, POOL_HIDE_Y, lz));
+        x18tf.teleportPosition(new Vector3d(lx, safeHideY(x18tf), lz));
 
         if (lastSuppressedCaveMode != mode) {
             lastSuppressedCaveMode = mode;
@@ -1071,6 +1144,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
                     + " active. Real X_18 appearances suppressed.");
         }
     }
+
     /**
      * Shuts down the X_18 for the rest of the day after a deep cave event.
      * Hides underground and sets an extremely long cooldown that effectively
@@ -1101,7 +1175,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             lz = cur.z();
         }
 
-        x18tf.teleportPosition(new Vector3d(lx, POOL_HIDE_Y, lz));
+        x18tf.teleportPosition(new Vector3d(lx, safeHideY(x18tf), lz));
         ai.setCurrentState(X18State.HIDDEN);
         ai.setActionTimerTicks(0);
         ai.setDamageDone(false);
@@ -1178,6 +1252,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     private void scheduleVanish(X18AIComponent ai) {
         lookExposure = 0;
         lookExposureLurk = 0;
+        ai.setDespawnAnimStarted(false);
         ai.setCurrentState(X18State.VANISHING);
         ai.setActionTimerTicks(0);
     }
@@ -1189,10 +1264,47 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     private void scheduleVanishPostCharge(X18AIComponent ai) {
         lookExposure = 0;
         lookExposureLurk = 0;
+        ai.setDespawnAnimStarted(false);
         ai.setCurrentState(X18State.VANISHING);
         ai.setActionTimerTicks(0);
         // Mark for aggressive re-appearance
         ai.setIgnoreStillnessOnce(true);
+    }
+
+    /**
+     * v0.3.7 FIX: transition into VANISHING (playing the Despawn animation and
+     * its render buffer, same as the normal stalk/charge path) before finally
+     * shutting X_18 down for the rest of the day.
+     *
+     * Previously the deep-cave charge/grab timeout and contact paths called
+     * shutdownForDay() directly, which teleports the entity underground on the
+     * spot with no animation at all - the Despawn animation was never invoked
+     * anywhere in that path. Routing through VANISHING first means
+     * tickVanishing() plays "Despawn" and waits its usual 2-tick buffer, then
+     * (because pendingDeepCaveShutdown is set) finishes with shutdownForDay()
+     * instead of the short-cooldown hideUnderground().
+     */
+    private void beginDeepCaveDespawn(X18AIComponent ai) {
+        lookExposure = 0;
+        lookExposureLurk = 0;
+        ai.setDespawnAnimStarted(false);
+        ai.setPendingDeepCaveShutdown(true);
+        ai.setCurrentState(X18State.VANISHING);
+        ai.setActionTimerTicks(0);
+    }
+
+    /**
+     * Returns the Y to teleport X_18 to when hiding. Normally this is just
+     * POOL_HIDE_Y, but if X_18's current Y is already close to or below that
+     * (possible in deep, low cave sections - see v0.3.7d FIX comment near
+     * POOL_HIDE_Y), it clamps to current Y - HIDE_Y_MARGIN instead so the
+     * teleport always moves down, never up. WORLD_FLOOR_SAFETY_Y prevents
+     * going below the world floor in extreme cases.
+     */
+    private double safeHideY(TransformComponent x18tf) {
+        double currentY = x18tf.getPosition().y();
+        double hideY = Math.min(POOL_HIDE_Y, currentY - HIDE_Y_MARGIN);
+        return Math.max(hideY, WORLD_FLOOR_SAFETY_Y);
     }
 
     /** Teleport underground and start the post-appearance cooldown. */
@@ -1207,7 +1319,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             lz = cur.z();
         }
 
-        x18tf.teleportPosition(new Vector3d(lx, POOL_HIDE_Y, lz));
+        x18tf.teleportPosition(new Vector3d(lx, safeHideY(x18tf), lz));
         ai.setCurrentState(X18State.HIDDEN);
         ai.setActionTimerTicks(0);
         ai.setDamageDone(false);
@@ -1614,6 +1726,19 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             }
 
             animComp.setPlayingAnimation(AnimationSlot.Status, animation);
+
+            // HACK/FIX: The Hytale Server API has a bug in
+            // ActiveAnimationComponent.setPlayingAnimation()
+            // where it does not set 'isNetworkOutdated = true'. Consequently, the network
+            // system
+            // never detects that the animation list changed. We force it via reflection.
+            try {
+                java.lang.reflect.Field field = ActiveAnimationComponent.class.getDeclaredField("isNetworkOutdated");
+                field.setAccessible(true);
+                field.set(animComp, true);
+            } catch (Exception ex) {
+                log(Level.WARNING, "[AI] Failed to force isNetworkOutdated via reflection: " + ex.getMessage());
+            }
         } catch (Exception e) {
             log(Level.WARNING, "[AI] Animation '" + animation + "' failed: " + e.getMessage());
         }

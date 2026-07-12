@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17AISystem - v0.3.6
+ * X17AISystem - v0.3.7
  *
  * DESIGN PHILOSOPHY
  * X17 is not a pathfinding NPC. It is a directed horror experience.
@@ -107,7 +107,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
 
     // AMBUSH_SCARE
     private static final int AMBUSH_FREEZE_TICKS = 60; // 3 seconds - player sees X17 in their face
-    private static final int POST_SCARE_VANISH_MIN = 1200;
+    private static final int POST_SCARE_VANISH_MIN = 600;
     private static final int POST_SCARE_VANISH_MAX = 2400;
 
     // CHASE / RAGE
@@ -116,7 +116,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private static final int RAGE_COMMIT_TICKS = 400;
 
     // TRUE_VANISH / end-of-night
-    private static final int END_NIGHT_VANISH_MIN = 1200;
+    private static final int END_NIGHT_VANISH_MIN = 600;
     private static final int END_NIGHT_VANISH_MAX = 2400;
     private static final int WAITING_RANGE_MIN = 16;
     private static final int WAITING_RANGE_MAX = 24;
@@ -546,7 +546,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
         // Tiny chance: X17 just vanishes with a short cooldown.
         if (roll < 0.06) {
             log(Level.INFO, "[AI] Chose: phantom vanish. [" + personality + "]");
-            beginTrueVanish(ai, x17tf, 1, randomBetween(1200, 2400)); // 1 to 2 minutes
+            beginTrueVanish(ai, x17tf, 1, randomBetween(600, 2400)); // 30s to 2 minutes
             return;
         }
 
@@ -1042,7 +1042,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
     private void faceTarget(TransformComponent x17tf, Vector3d target) {
         Vector3d pos = x17tf.getPosition();
         x17tf.setRotation(
-                dev.hytalemod.x17.FacingUtil.rotationToFace(pos, target, 0.0));
+                dev.hytalemod.x17.FacingUtil.rotationToFace(pos, target, Math.PI));
     }
 
     private boolean isPlayerWatchingX17(TransformComponent playerTf, TransformComponent x17tf) {

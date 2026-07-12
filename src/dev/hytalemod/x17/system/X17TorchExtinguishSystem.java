@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
- * X17TorchExtinguishSystem - v0.3.6
+ * X17TorchExtinguishSystem - v0.3.7
  *
  * Extinguishes all torch-type blocks within a configurable AOE radius around a
  * given world position. Triggered by X17AISystem whenever X17 enters its first

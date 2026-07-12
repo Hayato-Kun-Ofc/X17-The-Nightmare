@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 /**
- * X18CaveDayScheduler - v0.3.6
+ * X18CaveDayScheduler - v0.3.7
  *
  * Small cave-day scheduler for X_18. It mirrors the X_17 night idea without
  * sharing state with X_17: every world day becomes one of three cave modes.

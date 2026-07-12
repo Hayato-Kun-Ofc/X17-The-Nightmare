@@ -6,7 +6,6 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import org.joml.Vector3d;
 
-
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
@@ -31,7 +30,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * X17EventSystem - v0.3.6
+ * X17EventSystem - v0.3.7
  */
 public class X17EventSystem {
 
@@ -200,7 +199,7 @@ public class X17EventSystem {
 
     private void prepareNightDirective() {
         if (scheduler.shouldSpawnThisNight()) {
-            currentNightSpawnDelayTicks = randomBetween(70, 200);
+            currentNightSpawnDelayTicks = randomBetween(600, 2400);
             currentNightPresenceBudgetTicks = randomBetween(
                     X17AIComponent.NIGHT_ACTIVITY_MIN_TICKS,
                     X17AIComponent.NIGHT_ACTIVITY_MAX_TICKS);
@@ -455,21 +454,20 @@ public class X17EventSystem {
 
         Vector3d spawnPos = buildSpawnPositionNear(playerTransform);
         double spawnDistance = Math.sqrt(
-            Math.pow(spawnPos.x() - playerTransform.getPosition().x(), 2) +
-            Math.pow(spawnPos.y() - playerTransform.getPosition().y(), 2) +
-            Math.pow(spawnPos.z() - playerTransform.getPosition().z(), 2)
-        );
-        int spawnDelay = javaSpawnDoneThisNight ? 1 : currentNightSpawnDelayTicks;
+                Math.pow(spawnPos.x() - playerTransform.getPosition().x(), 2) +
+                        Math.pow(spawnPos.y() - playerTransform.getPosition().y(), 2) +
+                        Math.pow(spawnPos.z() - playerTransform.getPosition().z(), 2));
+        int spawnDelay = javaSpawnDoneThisNight ? randomBetween(1000, 2400) : currentNightSpawnDelayTicks;
 
         if (spawnJavaX17(store, spawnPos, spawnDelay)) {
-            javaSpawnDoneThisNight = true;
-            javaSpawnRetryCooldownTicks = 40;
             plugin.log(Level.INFO, "[Scheduler] X17 "
-                    + (spawnDelay == 1 ? "respawned" : "spawned")
+                    + (javaSpawnDoneThisNight ? "respawned" : "spawned")
                     + " via Java at " + formatPos(spawnPos)
                     + " | Distance=" + String.format("%.1f", spawnDistance));
+            javaSpawnDoneThisNight = true;
+            javaSpawnRetryCooldownTicks = randomBetween(500, 1500);
         } else {
-            javaSpawnRetryCooldownTicks = 40;
+            javaSpawnRetryCooldownTicks = 500; // 20 seconds on fail to try again
         }
     }
 
@@ -595,7 +593,8 @@ public class X17EventSystem {
         double spread = 2.6;
         double angle = center + randomRange(-spread / 2.0, spread / 2.0);
         double distance = randomRange(42.0, 64.0);
-        // Convention throughout is sin(yaw) -> X, cos(yaw) -> Z (matches faceTarget atan2(dx,dz)).
+        // Convention throughout is sin(yaw) -> X, cos(yaw) -> Z (matches faceTarget
+        // atan2(dx,dz)).
         return new Vector3d(
                 playerPos.x() + Math.sin(angle) * distance,
                 playerPos.y(),
@@ -625,4 +624,3 @@ public class X17EventSystem {
         return String.format("(%.1f, %.1f, %.1f)", pos.x(), pos.y(), pos.z());
     }
 }
-

@@ -27,7 +27,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem - v0.3.6
+ * X17ShinyTrapSystem - v0.3.7
  *
  * GHOST NIGHT DECOY AMBUSH
  *

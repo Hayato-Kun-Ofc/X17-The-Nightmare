@@ -20,7 +20,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShadowsSystem - v0.3.6
+ * X17ShadowsSystem - v0.3.7
  *
  * Rare paranormal event for ghost/silent nights (when X17 is NOT actively
  * spawned).
@@ -31,8 +31,8 @@ import java.util.logging.Level;
  * SHADOW BEHAVIOUR:
  * - All shadows face the player continuously.
  * - Each shadow has a 5-second (100 tick) lifetime.
- * - If the player looks directly at a shadow, it vanishes instantly
- *   (re-enabled in v0.3.5 - see FIX #24).
+ * - If the player looks directly at a shadow, it vanishes instantly.
+ * 
  * - After 100 ticks, all remaining shadows vanish automatically.
  * - Shadows have 100 HP but cannot attack - purely psychological.
  *
@@ -42,7 +42,7 @@ import java.util.logging.Level;
  * 1. On first trigger: spawn SHADOW_COUNT fresh entities via NPCPlugin.
  * 2. To "despawn": teleport to Y=2 (underground, invisible to player).
  * 3. On next trigger: REUSE existing refs if valid (teleport from underground
- *    to new positions). Only spawn new entities if refs became invalid.
+ * to new positions). Only spawn new entities if refs became invalid.
  * This ensures zero entity accumulation across nights.
  *
  * ROLL SYSTEM:

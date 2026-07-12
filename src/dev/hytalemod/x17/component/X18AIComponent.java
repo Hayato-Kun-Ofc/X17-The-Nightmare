@@ -8,7 +8,7 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X18AIComponent - v0.3.6
+ * X18AIComponent - v0.3.7
  *
  * Runtime state for the X_18 cave stalker. All timing constants live here so
  * X18AISystem is free of magic numbers.
@@ -26,6 +26,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * Y=60) and are locked out for the rest of the current night. The standard
  * CHARGING state can also trigger from STALK with a 25% chance (once per
  * night). attackUsedThisSession resets on each night transition.
+ *
+ * v0.3.7
+ * ------
+ * - Added despawnAnimStarted: dedicated flag for "Despawn animation started
+ * this VANISHING cycle", replacing the reused damageDone flag. damageDone
+ * was being set true by a successful charge hit BEFORE the state switched
+ * to VANISHING, so the Despawn animation's first-tick check was already
+ * satisfied and got skipped - the entity vanished instantly with no
+ * animation. Missed charges (timer expiry) were unaffected because
+ * damageDone stayed false in that path, which is why Despawn looked
+ * "random" rather than fully broken.
+ * - Added pendingDeepCaveShutdown: lets the deep-cave charge/grab timeout and
+ * contact paths reuse the normal VANISHING sequence (Despawn animation +
+ * render buffer) before shutting down for the day, instead of calling
+ * shutdownForDay() directly and skipping the animation entirely.
  *
  * --------------------------
  * - DEEP_CAVE_Y_THRESHOLD raised from 40 to 60 (reachable by normal caves)
@@ -57,7 +72,7 @@ public class X18AIComponent implements Component<EntityStore> {
 
     // -- Grab sub-phases ------------------------------------------------------
     // DEEP_CAVE_GRABBING uses a sub-phase counter to sequence:
-    // 0 = approaching (ChargeAttack animation, high-speed move toward player)
+    // 0 = approaching (Charged_Attack animation, high-speed move toward player)
     // 1 = contact made, playing Grab animation, player immobilized
     // 2 = transition to DEEP_CAVE_BLACKOUT
     //
@@ -173,7 +188,7 @@ public class X18AIComponent implements Component<EntityStore> {
     // for DEEP_CAVE_DWELL_REQUIRED ticks.
     //
     // Two rolls:
-    // 50% -> guaranteed ChargeAttack (DEEP_CAVE_CHARGING)
+    // 50% -> guaranteed Charged_Attack (DEEP_CAVE_CHARGING)
     // 50% -> instant approach + Grab animation (DEEP_CAVE_GRABBING)
     // After either event fires, the X_18 shuts down until the next night.
 
@@ -344,6 +359,33 @@ public class X18AIComponent implements Component<EntityStore> {
      */
     private int blackScreenCloseTicks = 0;
 
+    /**
+     * v0.3.7 FIX: dedicated flag for "Despawn animation already started this
+     * VANISHING cycle". Previously tickVanishing() reused damageDone for this
+     * purpose, but damageDone is also used by tickCharging()/tickDeepCaveCharging()
+     * to mean "hit already applied". On a successful charge hit, damageDone was
+     * set true BEFORE the state switched to VANISHING, so the first tick of
+     * VANISHING saw isDamageDone()==true and skipped playing the Despawn
+     * animation entirely, jumping straight to hiding underground.
+     * Not persisted - transient buffer-tracking flag, same category as
+     * grabSubPhase (safe to reset on reload).
+     */
+    private boolean despawnAnimStarted = false;
+
+    /**
+     * v0.3.7 FIX: when true, the VANISHING cycle currently playing out was
+     * started on behalf of a deep-cave charge/grab event, so once the Despawn
+     * animation buffer finishes, tickVanishing() must call shutdownForDay()
+     * (long cooldown, event-fired-today flag) instead of the normal
+     * hideUnderground() (short post-appearance cooldown). This lets the deep
+     * cave charge/grab paths reuse the same animated vanish sequence as the
+     * normal stalk/charge flow instead of teleporting the entity away with no
+     * animation at all.
+     * Not persisted - transient, always set immediately before entering
+     * VANISHING and consumed the same cycle.
+     */
+    private boolean pendingDeepCaveShutdown = false;
+
     // -------------------------------------------------------------------------
     // Constructors
     // -------------------------------------------------------------------------
@@ -373,6 +415,8 @@ public class X18AIComponent implements Component<EntityStore> {
         this.grabStandY = o.grabStandY;
         this.grabStandZ = o.grabStandZ;
         this.blackScreenCloseTicks = o.blackScreenCloseTicks;
+        this.despawnAnimStarted = o.despawnAnimStarted;
+        this.pendingDeepCaveShutdown = o.pendingDeepCaveShutdown;
     }
 
     // -------------------------------------------------------------------------
@@ -610,6 +654,24 @@ public class X18AIComponent implements Component<EntityStore> {
         grabStandX = x;
         grabStandY = y;
         grabStandZ = z;
+    }
+
+    // -- Despawn animation / deep-cave shutdown handoff (v0.3.7) ---------------
+
+    public boolean isDespawnAnimStarted() {
+        return despawnAnimStarted;
+    }
+
+    public void setDespawnAnimStarted(boolean v) {
+        despawnAnimStarted = v;
+    }
+
+    public boolean isPendingDeepCaveShutdown() {
+        return pendingDeepCaveShutdown;
+    }
+
+    public void setPendingDeepCaveShutdown(boolean v) {
+        pendingDeepCaveShutdown = v;
     }
 
     // -- Compatibility stub ----------------------------------------------------
