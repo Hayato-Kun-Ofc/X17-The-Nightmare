@@ -35,8 +35,12 @@ We have provided an extensive, multi-chapter Wiki explaining every detail of the
 
 The mod is written in Java utilizing the Hytale ECS (Entity Component System) and focuses heavily on data persistence and thread safety.
 
-- **`X17Plugin.java`**: The main class. Registers the custom components (`x17:ai_controller`, `x17:player_state`) and initializes the systems.
-- **`component/`**: Contains data wrappers attached to the entity (`X17AIComponent`) and to players (`X17PlayerComponent`).
+- **`X17Plugin.java`**: The main class. Registers the custom components (`x17:ai_controller`, `x17:player_state`, `x17:x18_ai_controller`) and initializes the systems (including X18 safety nets).
+- **`FacingUtil.java`**: Shared yaw/rotation helper used by X-17 and X_18 so model-facing offsets stay consistent.
+- **`component/`**: Contains data wrappers attached to the entities and players:
+  - `X17AIComponent`: Runtime AI state for X-17.
+  - `X17PlayerComponent`: Per-player state used by X-17 systems.
+  - `X18AIComponent`: Runtime AI state, timers, cave session data, grab state, and blackout safety data for X_18.
 - **`system/`**: Contains the ticking logic. 
   - `X17AISystem`: Controls movement, teleportation, stalking logic, and rage chases.
   - `X17DamageSystem`: Handles the hit counter necessary for escaping Rage.
@@ -46,8 +50,16 @@ The mod is written in Java utilizing the Hytale ECS (Entity Component System) an
   - `X17ItemStealSystem`: Implements the silent theft of priority items from player chests.
   - `X17ShadowsSystem`: Spawns fleeting paranormal shadow replicas on Ghost Nights to induce paranoia.
   - `X17ShinyTrapSystem`: Creates deceptive item decoys in the wild that lure players into ambushes.
-- **`scheduler/`**: Contains the `X17NightScheduler`, responsible for randomizing nights and writing outcomes to local `.properties` files.
-- **`ui/`**: Contains Java code rendering the `X17WelcomePage` UI.
+  - `X18AISystem`: Controls X_18 cave stalking, lurking, charge attacks, deep cave dwell events, grab, blackout, cave teleportation, and shutdown.
+  - `X18CaveSpawnSystem`: Creates and attaches the first X_18 entity when a cave player is detected, then pools and reuses it.
+  - `X18CaveGhostSoundSystem`: Handles ambient cave sounds when the cave day scheduler rolls a sound-only ghost cave.
+  - `X18BlackScreenSafetySystem`: Independent ticking safety net that calls `X18BlackScreenPage.tickSafety(store)` so blackout overlays cannot remain stuck if the AI path aborts.
+- **`scheduler/`**: Contains the schedulers:
+  - `X17NightScheduler`: Responsible for randomizing nights and writing outcomes to local `.properties` files.
+  - `X18CaveDayScheduler`: Responsible for scheduling cave day modes (REAL, GHOST_CAVE, SILENT_CAVE) without sharing state with X-17.
+- **`ui/`**: Contains Java code rendering custom UI pages:
+  - `X17WelcomePage`: Welcome/info screen shown by the mod.
+  - `X18BlackScreenPage`: Dismissible opaque black overlay used during X_18's grab and blackout event, with active-player tracking, hard timeout cleanup, and global force-close helpers.
 
 ## ⚠️ Requirements
 
