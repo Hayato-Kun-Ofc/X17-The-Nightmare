@@ -12,12 +12,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 /**
- * X18CaveDayScheduler - v0.3.7
+ * X18CaveDayScheduler - v0.3.8
  *
  * Small cave-day scheduler for X_18. It mirrors the X_17 night idea without
  * sharing state with X_17: every world day becomes one of three cave modes.
  *
- * REAL       : X_18 may spawn and physically stalk the player in caves.
+ * REAL : X_18 may spawn and physically stalk the player in caves.
  * GHOST_CAVE : X_18 does not spawn; only rare cave sounds may happen.
  * SILENT_CAVE: X_18 does not spawn and no X_18 cave sounds happen.
  */
@@ -27,8 +27,7 @@ public class X18CaveDayScheduler extends TickingSystem<EntityStore> {
     private static final int GHOST_CHANCE_PCT = 40;
     private static final int FORCE_REAL_AFTER_NO_REAL_DAYS = 3;
 
-    private static final ConcurrentHashMap<String, CaveDayState> STATE_BY_WORLD =
-            new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, CaveDayState> STATE_BY_WORLD = new ConcurrentHashMap<>();
 
     public enum CaveDayMode {
         REAL,

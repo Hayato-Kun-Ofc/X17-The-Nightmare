@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * X17PlayerComponent - v0.3.7
+ * X17PlayerComponent - v0.3.8
  * Stores persistent data related to the X17 mod on the player entity.
  */
 public class X17PlayerComponent implements Component<EntityStore> {
@@ -29,7 +29,8 @@ public class X17PlayerComponent implements Component<EntityStore> {
                             }
                         }
                     },
-                    c -> String.join(",", c.seenWelcomeWorlds)).add()
+                    c -> String.join(",", c.seenWelcomeWorlds))
+            .add()
             .build();
 
     private Set<String> seenWelcomeWorlds = new HashSet<>();

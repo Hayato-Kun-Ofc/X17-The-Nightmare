@@ -4,7 +4,7 @@ import org.joml.Vector3d;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import dev.hytalemod.x17.X17Plugin;
 
 import java.util.ArrayList;
@@ -12,8 +12,8 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
- * X17TorchExtinguishSystem - v0.3.7
- *
+ * X17TorchExtinguishSystem - v0.3.8
+ * 
  * Extinguishes all torch-type blocks within a configurable AOE radius around a
  * given world position. Triggered by X17AISystem whenever X17 enters its first
  * STALK observation for a given night (the "stalk" moment the player should
@@ -33,7 +33,7 @@ import java.util.logging.Level;
  * TORCH BLOCK IDs (Hytale naming):
  * All known torch variants that carry an interaction state "Off" / "On"
  * are stored in TORCH_BLOCK_IDS. IDs are matched against the normalised
- * suffix (after the last ':'), lower-cased, with any leading '*' stripped  -
+ * suffix (after the last ':'), lower-cased, with any leading '*' stripped -
  * the same normalisation used across the rest of the mod.
  *
  * AOE:
@@ -127,7 +127,7 @@ public class X17TorchExtinguishSystem {
      *
      * @param world  the world in which to operate - must not be {@code null}
      * @param centre world-space position to scan around (typically the player
-     *              position at the moment X17 appears)
+     *               position at the moment X17 appears)
      */
     public void extinguishTorchesAround(World world, Vector3d centre) {
         if (world == null || centre == null) {
@@ -152,22 +152,21 @@ public class X17TorchExtinguishSystem {
                 int bx = cx + x;
                 int bz = cz + z;
 
-                BlockAccessor accessor;
+                                WorldChunk chunk;
                 try {
-                    accessor = world.getChunkIfLoaded(
-                            ChunkUtil.indexChunkFromBlock(bx, bz));
+                    chunk = world.getChunkStore().getChunkComponent(
+                            ChunkUtil.indexChunkFromBlock(bx, bz), WorldChunk.getComponentType());
                 } catch (Exception e) {
-                    // Chunk not loaded - skip this column.
                     continue;
                 }
-                if (accessor == null) {
+                if (chunk == null) {
                     continue;
                 }
 
                 for (int y = -SCAN_Y_DOWN; y <= SCAN_Y_UP; y++) {
                     int by = cy + y;
                     try {
-                        BlockType bt = accessor.getBlockType(bx, by, bz);
+                        BlockType bt = chunk.getBlockType(bx, by, bz);
                         if (bt == null) {
                             continue;
                         }
@@ -178,7 +177,8 @@ public class X17TorchExtinguishSystem {
                         }
 
                         // 6-arg overload on BlockAccessor - actually writes state.
-                        accessor.setBlockInteractionState(bx, by, bz, bt, STATE_OFF, false);
+                        chunk.setBlockInteractionState(bx, by, bz, bt, STATE_OFF, false);
+                        chunk.markNeedsSaving();
                         extinguished++;
                     } catch (Exception e) {
                         log(Level.INFO, "[Torch] setBlockInteractionState failed at ("

@@ -9,7 +9,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X17AIComponent - v0.3.7
+ * X17AIComponent - v0.3.8
  *
  * Stores the state and configuration for the X17 entity, including timers,
  * night-specific directives, and movement budgets.
@@ -56,85 +56,112 @@ public class X17AIComponent implements Component<EntityStore> {
             .builder(X17AIComponent.class, X17AIComponent::new)
             .append(new KeyedCodec<>("State", Codec.INTEGER),
                     (c, v) -> c.currentState = X17State.fromId(v),
-                    c -> c.currentState.ordinal()).add()
+                    c -> c.currentState.ordinal())
+            .add()
             .append(new KeyedCodec<>("SpawnCooldownTicks", Codec.INTEGER),
                     (c, v) -> c.spawnCooldownTicks = v,
-                    c -> c.spawnCooldownTicks).add()
+                    c -> c.spawnCooldownTicks)
+            .add()
             .append(new KeyedCodec<>("VanishTimerTicks", Codec.INTEGER),
                     (c, v) -> c.vanishTimerTicks = v,
-                    c -> c.vanishTimerTicks).add()
+                    c -> c.vanishTimerTicks)
+            .add()
             .append(new KeyedCodec<>("HitWindowTicks", Codec.INTEGER),
                     (c, v) -> c.hitWindowTicks = v,
-                    c -> c.hitWindowTicks).add()
+                    c -> c.hitWindowTicks)
+            .add()
             .append(new KeyedCodec<>("ChaseDurationTicks", Codec.INTEGER),
                     (c, v) -> c.chaseDurationTicks = v,
-                    c -> c.chaseDurationTicks).add()
+                    c -> c.chaseDurationTicks)
+            .add()
             .append(new KeyedCodec<>("CombatHitCount", Codec.INTEGER),
                     (c, v) -> c.combatHitCount = v,
-                    c -> c.combatHitCount).add()
+                    c -> c.combatHitCount)
+            .add()
             .append(new KeyedCodec<>("AggroTargetEntityId", Codec.INTEGER),
                     (c, v) -> c.aggroTargetEntityId = v,
-                    c -> c.aggroTargetEntityId).add()
+                    c -> c.aggroTargetEntityId)
+            .add()
             .append(new KeyedCodec<>("LastKnownPlayerX", Codec.DOUBLE),
                     (c, v) -> c.lastKnownPlayerX = v,
-                    c -> c.lastKnownPlayerX).add()
+                    c -> c.lastKnownPlayerX)
+            .add()
             .append(new KeyedCodec<>("LastKnownPlayerY", Codec.DOUBLE),
                     (c, v) -> c.lastKnownPlayerY = v,
-                    c -> c.lastKnownPlayerY).add()
+                    c -> c.lastKnownPlayerY)
+            .add()
             .append(new KeyedCodec<>("LastKnownPlayerZ", Codec.DOUBLE),
                     (c, v) -> c.lastKnownPlayerZ = v,
-                    c -> c.lastKnownPlayerZ).add()
+                    c -> c.lastKnownPlayerZ)
+            .add()
             .append(new KeyedCodec<>("SpawnCheckDone", Codec.BOOLEAN),
                     (c, v) -> c.spawnCheckDone = v,
-                    c -> c.spawnCheckDone).add()
+                    c -> c.spawnCheckDone)
+            .add()
             .append(new KeyedCodec<>("FledFromCombat", Codec.BOOLEAN),
                     (c, v) -> c.fledFromCombat = v,
-                    c -> c.fledFromCombat).add()
+                    c -> c.fledFromCombat)
+            .add()
             .append(new KeyedCodec<>("FalseAmbush", Codec.BOOLEAN),
                     (c, v) -> c.falseAmbush = v,
-                    c -> c.falseAmbush).add()
+                    c -> c.falseAmbush)
+            .add()
             .append(new KeyedCodec<>("AmbushScareCooldownTicks", Codec.INTEGER),
                     (c, v) -> c.ambushScareCooldownTicks = v,
-                    c -> c.ambushScareCooldownTicks).add()
+                    c -> c.ambushScareCooldownTicks)
+            .add()
             .append(new KeyedCodec<>("SpawnAllowedThisNight", Codec.BOOLEAN),
                     (c, v) -> c.spawnAllowedThisNight = v,
-                    c -> c.spawnAllowedThisNight).add()
+                    c -> c.spawnAllowedThisNight)
+            .add()
             .append(new KeyedCodec<>("GhostSoundNight", Codec.BOOLEAN),
                     (c, v) -> c.ghostSoundNight = v,
-                    c -> c.ghostSoundNight).add()
+                    c -> c.ghostSoundNight)
+            .add()
             .append(new KeyedCodec<>("AttackNight", Codec.BOOLEAN),
                     (c, v) -> c.attackNight = v,
-                    c -> c.attackNight).add()
+                    c -> c.attackNight)
+            .add()
             .append(new KeyedCodec<>("CurrentNightNumber", Codec.INTEGER),
                     (c, v) -> c.currentNightNumber = v,
-                    c -> c.currentNightNumber).add()
+                    c -> c.currentNightNumber)
+            .add()
             .append(new KeyedCodec<>("NightPresenceBudgetTicks", Codec.INTEGER),
                     (c, v) -> c.nightPresenceBudgetTicks = v,
-                    c -> c.nightPresenceBudgetTicks).add()
+                    c -> c.nightPresenceBudgetTicks)
+            .add()
             .append(new KeyedCodec<>("ActionCooldownTicks", Codec.INTEGER),
                     (c, v) -> c.actionCooldownTicks = v,
-                    c -> c.actionCooldownTicks).add()
+                    c -> c.actionCooldownTicks)
+            .add()
             .append(new KeyedCodec<>("RepositionCooldownTicks", Codec.INTEGER),
                     (c, v) -> c.repositionCooldownTicks = v,
-                    c -> c.repositionCooldownTicks).add()
+                    c -> c.repositionCooldownTicks)
+            .add()
             .append(new KeyedCodec<>("HuntCommitmentTicks", Codec.INTEGER),
                     (c, v) -> c.huntCommitmentTicks = v,
-                    c -> c.huntCommitmentTicks).add()
+                    c -> c.huntCommitmentTicks)
+            .add()
             .append(new KeyedCodec<>("HighGroundPunishCooldownTicks", Codec.INTEGER),
                     (c, v) -> c.highGroundPunishCooldownTicks = v,
-                    c -> c.highGroundPunishCooldownTicks).add()
+                    c -> c.highGroundPunishCooldownTicks)
+            .add()
             .append(new KeyedCodec<>("AppearanceHoldTicks", Codec.INTEGER),
                     (c, v) -> c.appearanceHoldTicks = v,
-                    c -> c.appearanceHoldTicks).add()
+                    c -> c.appearanceHoldTicks)
+            .add()
             .append(new KeyedCodec<>("LookExposureTicks", Codec.INTEGER),
                     (c, v) -> c.lookExposureTicks = v,
-                    c -> c.lookExposureTicks).add()
+                    c -> c.lookExposureTicks)
+            .add()
             .append(new KeyedCodec<>("AttackAttemptedThisNight", Codec.BOOLEAN),
                     (c, v) -> c.attackAttemptedThisNight = v,
-                    c -> c.attackAttemptedThisNight).add()
+                    c -> c.attackAttemptedThisNight)
+            .add()
             .append(new KeyedCodec<>("RequestNpcVanish", Codec.BOOLEAN),
                     (c, v) -> c.requestNpcVanish = v,
-                    c -> c.requestNpcVanish).add()
+                    c -> c.requestNpcVanish)
+            .add()
             .build();
 
     private X17State currentState = X17State.DORMANT;

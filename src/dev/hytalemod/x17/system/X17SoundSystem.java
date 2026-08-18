@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.3.7
+ * X17SoundSystem - v0.3.8
  *
  * Sound pacing is synchronized with scheduler decisions:
  * spawn nights get deceptive local sounds, ghost nights get rarer remote
@@ -112,10 +112,14 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
     // Replaced with a single AtomicReference<ScareRequest> and getAndSet(null).
     private static final class ScareRequest {
         final Vector3d position;
-        ScareRequest(Vector3d p) { this.position = p; }
+
+        ScareRequest(Vector3d p) {
+            this.position = p;
+        }
     }
-    private final java.util.concurrent.atomic.AtomicReference<ScareRequest> pendingScare =
-            new java.util.concurrent.atomic.AtomicReference<>(null);
+
+    private final java.util.concurrent.atomic.AtomicReference<ScareRequest> pendingScare = new java.util.concurrent.atomic.AtomicReference<>(
+            null);
 
     private static final String SND_AMBUSH_SCARE = "SFX_X_17_Jumpscare";
 
@@ -227,8 +231,7 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
             triggerSound(SND_WHISPERS, deceptivePos, store);
             cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
             return;
-        }
-        else if (roll < SPAWN_WHISPER_CHANCE * 2.0) {
+        } else if (roll < SPAWN_WHISPER_CHANCE * 2.0) {
             log(Level.INFO, "[SND] Deceptive whisper (extended).");
             triggerSound(SND_WHISPERS, deceptivePos, store);
             cooldownLeft = randomBetween(COOLDOWN_SPAWN_MIN, COOLDOWN_SPAWN_MAX);
@@ -396,4 +399,3 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
         }
     }
 }
-

@@ -331,30 +331,6 @@
               ]
             },
             {
-              "$Comment": "Direct brutal melee attack - NO dodging, NO strafing",
-              "Reference": "Component_Instruction_Target_Adjusted_Attack_Melee",
-              "Modify": {
-                "AttackSequence": {
-                  "Compute": "AttackSequence"
-                },
-                "AttackDistance": {
-                  "Compute": "AttackDistance"
-                },
-                "CombatRelativeTurnSpeed": {
-                  "Compute": "CombatRelativeTurnSpeed"
-                },
-                "MaintainDistance": false,
-                "StrafingDurationRange": [
-                  0,
-                  0
-                ],
-                "StrafingFrequencyRange": [
-                  999,
-                  999
-                ]
-              }
-            },
-            {
               "Continue": true,
               "Sensor": {
                 "Type": "Player",

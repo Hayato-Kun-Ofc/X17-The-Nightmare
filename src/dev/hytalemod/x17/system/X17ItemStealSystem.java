@@ -20,16 +20,20 @@ import java.util.Locale;
 import java.util.logging.Level;
 
 /**
- * X17ItemStealSystem - v0.3.7
+ * X17ItemStealSystem - v0.3.8
  *
- * Silently removes one priority item from a nearby chest. There are no drops and
+ * Silently removes one priority item from a nearby chest. There are no drops
+ * and
  * no visual effects; the item simply disappears from the container.
  *
  * Current server API:
- * - WorldChunk.getBlockComponentHolder(x, y, z) returns a copy of the block holder.
+ * - WorldChunk.getBlockComponentHolder(x, y, z) returns a copy of the block
+ * holder.
  * - ItemContainerBlock stores the SimpleItemContainer for container blocks.
- * - SimpleItemContainer.internal_removeSlot(slot) deletes the full stack without producing output.
- * - Existing block entity refs are updated in place to avoid recreating container state.
+ * - SimpleItemContainer.internal_removeSlot(slot) deletes the full stack
+ * without producing output.
+ * - Existing block entity refs are updated in place to avoid recreating
+ * container state.
  *
  * Returns true when an item was successfully stolen.
  */
@@ -141,7 +145,8 @@ public class X17ItemStealSystem {
         return container != null ? new ContainerTarget(ref, holder, containerBlock, container) : null;
     }
 
-    private ItemStack removeStackSilently(SimpleItemContainer container, short slot) throws ReflectiveOperationException {
+    private ItemStack removeStackSilently(SimpleItemContainer container, short slot)
+            throws ReflectiveOperationException {
         if (removeSlotMethod == null) {
             removeSlotMethod = SimpleItemContainer.class.getDeclaredMethod("internal_removeSlot", short.class);
             removeSlotMethod.setAccessible(true);
@@ -157,9 +162,8 @@ public class X17ItemStealSystem {
         }
 
         target.holder.replaceComponent(ItemContainerBlock.getComponentType(), target.containerBlock);
-        int blockIndex = ChunkUtil.indexBlockInColumn(x, y, z);
-        chunk.getBlockComponentChunk().storeEntityHolder(blockIndex, target.holder);
-        chunk.getBlockComponentChunk().markNeedsSaving();
+        BlockType blockType = chunk.getBlockType(x, y, z);
+        chunk.setState(x, y, z, blockType, chunk.getRotationIndex(x, y, z), target.holder);
         chunk.markNeedsSaving();
         return true;
     }
@@ -211,9 +215,8 @@ public class X17ItemStealSystem {
 
     private WorldChunk getChunk(World world, int x, int z) {
         try {
-            // Use loaded chunks so containers near the player/base are included.
-            // getChunkIfNonTicking can miss actively ticking chunks.
-            return world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(x, z));
+            return world.getChunkStore().getChunkComponent(
+                    ChunkUtil.indexChunkFromBlock(x, z), WorldChunk.getComponentType());
         } catch (Exception e) {
             return null;
         }

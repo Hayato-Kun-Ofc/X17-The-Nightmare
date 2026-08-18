@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /*
- * X_18 - Cave Stalker AI - v0.3.7
+ * X_18 - Cave Stalker AI - v0.3.8
  *
  * -- DESIGN REQUIREMENTS ------------------------------------------------------
  *
@@ -455,7 +455,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     // STATE: STALKING
     // Visible, staring. Tracks look-exposure.
     // * lookExposure >= STALK_EXPOSURE_TICKS OR stalk timer expired
-    // -> 95% vanish, 5% charge (unless attack already used this session)
+    // -> 75% vanish, 25% charge (unless attack already used this session)
     // * Player within PROXIMITY_VANISH_DIST -> vanish immediately
     // * Player left cave -> vanish, reset session
     // =========================================================================
@@ -652,7 +652,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        // Eye-contact detection - vanish fast (2 ticks), more reactive than STALK
+        // Eye-contact detection - accumulate exposure (100 ticks = 5 s)
         if (isPlayerWatching(target.tf, x18tf.getPosition())) {
             lookExposureLurk++;
         } else {
@@ -676,7 +676,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
     }
 
     // =========================================================================
-    // DEEP CAVE EVENT - triggered after 4s below Y=40
+    // DEEP CAVE EVENT - triggered after 120s (2400 ticks) below Y=60
     //
     // 50/50 split:
     // 50% -> DEEP_CAVE_CHARGING: guaranteed charge attack

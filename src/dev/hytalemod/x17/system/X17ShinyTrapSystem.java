@@ -15,7 +15,7 @@ import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
 
@@ -27,7 +27,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem - v0.3.7
+ * X17ShinyTrapSystem - v0.3.8
  *
  * GHOST NIGHT DECOY AMBUSH
  *
@@ -114,7 +114,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
 
     /** Movement speed toward destination (blocks/tick, ~20 tps -> 0.4 b/s). */
     private static final double DECOY_SPEED = 0.75;
-                                                    // b/tick = 0.4 b/s
+    // b/tick = 0.4 b/s
 
     /** Arrival threshold - decoy is "at destination" when this close (sq). */
     private static final double ARRIVE_DIST_SQ = 1.5 * 1.5;
@@ -195,9 +195,9 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
      * Called by X17AISystem when the night decision is finalised.
      *
      * @param isSpawnNight true if X17 will physically spawn this night (SPAWN
-     *                    decision).
-     *                    The trap is disabled on spawn nights - X17 has better
-     *                    things to do.
+     *                     decision).
+     *                     The trap is disabled on spawn nights - X17 has better
+     *                     things to do.
      */
     public void resetShinyTrapNight(boolean isSpawnNight) {
         // Always clean up previous night's entities first
@@ -766,13 +766,14 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         int z = (int) Math.floor(pos.z());
         int startY = (int) Math.floor(pos.y());
 
-        BlockAccessor accessor;
+                WorldChunk chunk;
         try {
-            accessor = world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(x, z));
+            chunk = world.getChunkStore().getChunkComponent(
+                    ChunkUtil.indexChunkFromBlock(x, z), WorldChunk.getComponentType());
         } catch (Exception e) {
             return pos;
         }
-        if (accessor == null) {
+        if (chunk == null) {
             return pos;
         }
 
@@ -780,7 +781,7 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
             // Use the accessor (not world) for the block-type lookup - matches
             // the pattern in X17TorchExtinguishSystem and is the recommended
             // path per the Hytale block API.
-            BlockType bt = accessor.getBlockType(x, y, z);
+            BlockType bt = chunk.getBlockType(x, y, z);
             if (bt != null && !isPassable(bt)) {
                 return new Vector3d(pos.x(), y + 1.0, pos.z());
             }

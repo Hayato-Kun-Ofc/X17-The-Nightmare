@@ -4,7 +4,7 @@ import org.joml.Vector3d;
 import com.hypixel.hytale.math.vector.Rotation3f;
 
 /**
- * FacingUtil - v0.3.7
+ * FacingUtil - v0.3.8
  *
  * Shared yaw-computation helper for the X-17 and X-18 AI systems.
  *

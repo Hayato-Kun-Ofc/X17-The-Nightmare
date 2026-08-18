@@ -8,7 +8,7 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X18AIComponent - v0.3.7
+ * X18AIComponent - v0.3.8
  *
  * Runtime state for the X_18 cave stalker. All timing constants live here so
  * X18AISystem is free of magic numbers.
@@ -164,7 +164,7 @@ public class X18AIComponent implements Component<EntityStore> {
     /**
      * Stillness detection: X_18 only appears when the player hasn't moved
      * more than STILLNESS_THRESHOLD blocks/tick for STILLNESS_TICKS_REQUIRED
-     * consecutive ticks (5 s of standing mostly still).
+     * consecutive ticks (160 ticks = 8 s of standing mostly still).
      *
      * v0.3.5: relaxed thresholds so X_18 can re-appear even when the player
      * is slowly moving (e.g. looking around after a charge attack).
@@ -216,7 +216,7 @@ public class X18AIComponent implements Component<EntityStore> {
 
     /** Speed of the instant Grab approach (blocks/tick). */
     public static final double DEEP_CAVE_GRAB_SPEED = 1.2;
-    /** Duration of the Grab hold animation (100 ticks = 5 s). */
+    /** Duration of the Grab hold animation (30 ticks = 1.5 s). */
     public static final int DEEP_CAVE_GRAB_HOLD_TICKS = 30;
     /** Duration of the deep-cave charge (same as normal charge). */
     public static final int DEEP_CAVE_CHARGE_DURATION = CHARGE_DURATION_TICKS;

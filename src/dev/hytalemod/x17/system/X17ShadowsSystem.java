@@ -20,7 +20,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShadowsSystem - v0.3.7
+ * X17ShadowsSystem - v0.3.8
  *
  * Rare paranormal event for ghost/silent nights (when X17 is NOT actively
  * spawned).
