@@ -105,6 +105,20 @@
         }
       ]
     },
+    "SwingLeft": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Attacks/Swing_Left.blockyanim"
+        }
+      ]
+    },
+    "SwingRight": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Attacks/Swing_Right.blockyanim"
+        }
+      ]
+    },
     "Climb_Up": {
       "Animations": [
         {

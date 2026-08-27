@@ -108,6 +108,24 @@
           "Looping": false
         }
       ]
+    },
+    "SwingLeft": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Attacks/Swing_Left.blockyanim",
+          "Looping": false,
+          "BlendingDuration": 0.05
+        }
+      ]
+    },
+    "SwingRight": {
+      "Animations": [
+        {
+          "Animation": "NPC/X_17/Animations/Attacks/Swing_Right.blockyanim",
+          "Looping": false,
+          "BlendingDuration": 0.05
+        }
+      ]
     }
   },
   "Parent": "Player",

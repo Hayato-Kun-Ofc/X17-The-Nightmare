@@ -38,13 +38,20 @@
       "Value": "X_17",
       "Description": "This NPCs attitude group"
     },
-    "AttackSequence": {
-      "Value": "Component_Instruction_Attack_Sequence_Zombie",
-      "Description": "The attack sequence to use in combat"
+    "Attack": {
+      "Value": "Root_NPC_Attack_Melee",
+      "Description": "The root interaction executed by X_17 while raging"
     },
     "AttackDistance": {
-      "Value": 1.0,
+      "Value": 2.25,
       "Description": "The distance at which an NPC will execute attacks"
+    },
+    "AttackPauseRange": {
+      "Value": [
+        1.25,
+        2.0
+      ],
+      "Description": "Minimum delay between X_17 melee attacks"
     },
     "CombatRelativeTurnSpeed": {
       "Value": 2.0,
@@ -348,6 +355,37 @@
                 "SlowDownDistance": 1.5,
                 "StopDistance": 0.5
               }
+            },
+            {
+              "$Comment": "Use the native melee root only while the custom Rage state has a locked player in range.",
+              "Sensor": {
+                "Type": "Target",
+                "Range": {
+                  "Compute": "AttackDistance"
+                },
+                "Filters": [
+                  {
+                    "Type": "LineOfSight"
+                  }
+                ]
+              },
+              "ActionsBlocking": true,
+              "Actions": [
+                {
+                  "Type": "PlayAnimation",
+                  "Slot": "Status",
+                  "Animation": "SwingLeft"
+                },
+                {
+                  "Type": "Attack",
+                  "Attack": {
+                    "Compute": "Attack"
+                  },
+                  "AttackPauseRange": {
+                    "Compute": "AttackPauseRange"
+                  }
+                }
+              ]
             },
             {
               "$Comment": "SURVIVAL: If player kites him for 45s, he vanishes",
