@@ -5,7 +5,6 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -15,9 +14,9 @@ import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
+import dev.hytalemod.x17.util.BlockAccess;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -27,7 +26,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /**
- * X17ShinyTrapSystem - v0.3.8
+ * X17ShinyTrapSystem - v0.3.9
  *
  * GHOST NIGHT DECOY AMBUSH
  *
@@ -766,22 +765,11 @@ public class X17ShinyTrapSystem extends TickingSystem<EntityStore> {
         int z = (int) Math.floor(pos.z());
         int startY = (int) Math.floor(pos.y());
 
-                WorldChunk chunk;
-        try {
-            chunk = world.getChunkStore().getChunkComponent(
-                    ChunkUtil.indexChunkFromBlock(x, z), WorldChunk.getComponentType());
-        } catch (Exception e) {
-            return pos;
-        }
-        if (chunk == null) {
-            return pos;
-        }
-
         for (int y = startY + 5; y >= startY - 15; y--) {
             // Use the accessor (not world) for the block-type lookup - matches
             // the pattern in X17TorchExtinguishSystem and is the recommended
             // path per the Hytale block API.
-            BlockType bt = chunk.getBlockType(x, y, z);
+            BlockType bt = BlockAccess.getBlockType(world, x, y, z);
             if (bt != null && !isPassable(bt)) {
                 return new Vector3d(pos.x(), y + 1.0, pos.z());
             }

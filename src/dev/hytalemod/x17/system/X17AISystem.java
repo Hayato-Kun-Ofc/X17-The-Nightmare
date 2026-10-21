@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
+import dev.hytalemod.x17.util.BlockAccess;
 import dev.hytalemod.x17.component.X17AIComponent;
 import dev.hytalemod.x17.component.X17AIComponent.X17State;
 
@@ -935,7 +936,7 @@ public class X17AISystem extends EntityTickingSystem<EntityStore> {
             for (int y = -1; y <= 3; y++) {
                 for (int z = -2; z <= 2; z++) {
                     try {
-                        BlockType bt = world.getBlockType(cx + x, cy + y, cz + z);
+                        BlockType bt = BlockAccess.getBlockType(world, cx + x, cy + y, cz + z);
                         if (bt == null) {
                             continue;
                         }

@@ -1,0 +1,26 @@
+﻿npcRoles.X_17.name=X-17
+npcRoles.X_17.description=X-17 La Pesadilla
+npcRoles.X_17.lore=Una entidad misteriosa que acecha en la noche
+
+items.X_17.name=X-17 La Pesadilla
+items.X_17.description=Una entidad misteriosa y etérea que emerge solo durante las horas más oscuras
+items.X_17.lore=X-17 es una criatura de misterio, nacida en las fronteras entre mundos. Ni completamente presente ni del todo ausente, se manifiesta solo en las horas más profundas de la noche. Observa desde la distancia, atraída por la presencia de viajeros.
+
+items.Deco_X_17_Trophy.name=Cabeza de X-17
+items.Deco_X_17_Trophy.description=Un trofeo macabro de la entidad de pesadilla que acecha en la niebla, su energía aún es palpable.
+
+customUI.Pages.X17WelcomePage.title=Bienvenido a la Pesadilla
+customUI.Pages.X17WelcomePage.subtitle=X-17 La Pesadilla — v0.3.9
+customUI.Pages.X17WelcomePage.body=Sobrevive en este mundo como siempre lo has hecho.\nConstruye tu refugio. Reúne tus recursos. Enciende tus hogueras.\n \nPero ten cuidado — las noches y las cuevas nunca volverán a ser las mismas.\nAlgo acecha en la niebla. Algo que observa.\n \nEstás siendo observado.
+customUI.Pages.X17WelcomePage.tipTitle=Consejos de Supervivencia
+customUI.Pages.X17WelcomePage.tip1= > Construye muros y techo, las puertas y ventanas pueden ser tu única advertencia.
+customUI.Pages.X17WelcomePage.tip2= > El silencio no significa nada. El ruido no significa nada. No confíes en nada.
+customUI.Pages.X17WelcomePage.button=Entendido. Comenzar.
+
+memories.categories.Unique.title = Único
+npcRoles.X_18.name=X-18
+npcRoles.X_18.description=X-18 La Maldición de las Cavernas
+npcRoles.X_18.lore=Un ser misterioso y corrupto que maldice a quienes se aventuran demasiado tiempo en las minas
+items.X_18.name=X-18 La Maldición de las Cavernas
+items.X_18.description=Una entidad misteriosa y corrupta que emerge de las cuevas profundas
+items.X_18.lore=X-18 es un misterio corrompido bajo la piedra, una maldición susurrada en las minas por quienes permanecieron demasiado tiempo bajo tierra. Espera en rincones invisibles, acecha desde la oscuridad y ataca sin previo aviso.

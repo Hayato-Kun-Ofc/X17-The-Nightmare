@@ -1,0 +1,26 @@
+﻿npcRoles.X_17.name=X-17
+npcRoles.X_17.description=X-17 Le Cauchemar
+npcRoles.X_17.lore=Une entité mystérieuse qui hante la nuit
+
+items.X_17.name=X-17 Le Cauchemar
+items.X_17.description=Une entité mystérieuse et éthérée qui n'apparaît que durant les heures les plus sombres
+items.X_17.lore=X-17 est une créature de mystère, née aux frontières entre les mondes. Ni pleinement présente ni entièrement absente, elle ne se manifeste que dans les heures les plus profondes de la nuit. Elle observe de loin, attirée par la présence des voyageurs.
+
+items.Deco_X_17_Trophy.name=Tête de X-17
+items.Deco_X_17_Trophy.description=Un trophée macabre de l'entité cauchemardesque qui rôde dans le brouillard, son énergie est encore palpable.
+
+customUI.Pages.X17WelcomePage.title=Bienvenue dans le Cauchemar
+customUI.Pages.X17WelcomePage.subtitle=X-17 Le Cauchemar — v0.3.9
+customUI.Pages.X17WelcomePage.body=Survis dans ce monde comme tu l'as toujours fait.\nConstruis ton abri. Rassemble tes ressources. Allume tes feux.\n \nMais sois prévenu — les nuits et les grottes ne seront plus jamais les mêmes.\nQuelque chose rôde dans le brouillard. Quelque chose qui observe.\n \nTu es observé.
+customUI.Pages.X17WelcomePage.tipTitle=Conseils de Survie
+customUI.Pages.X17WelcomePage.tip1= > Construis des murs et un toit, les portes et fenêtres pourraient être ton seul avertissement.
+customUI.Pages.X17WelcomePage.tip2= > Le silence ne signifie rien. Le bruit ne signifie rien. Ne fais confiance à rien.
+customUI.Pages.X17WelcomePage.button=J'ai compris. Commencer.
+
+memories.categories.Unique.title = Unique
+npcRoles.X_18.name=X-18
+npcRoles.X_18.description=X-18 La Malédiction des Cavernes
+npcRoles.X_18.lore=Un être mystérieux et corrompu qui maudit ceux qui s'aventurent trop longtemps dans les mines
+items.X_18.name=X-18 La Malédiction des Cavernes
+items.X_18.description=Une entité mystérieuse et corrompue qui émerge des cavernes profondes
+items.X_18.lore=X-18 est un mystère corrompu sous la pierre, une malédiction murmurée dans les mines par ceux qui sont restés trop longtemps sous terre. Il attend dans des recoins invisibles, rôde dans l'obscurité, puis charge sans prévenir.

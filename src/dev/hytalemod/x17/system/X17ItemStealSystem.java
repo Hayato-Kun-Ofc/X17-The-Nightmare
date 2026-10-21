@@ -6,11 +6,13 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
+import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import dev.hytalemod.x17.X17Plugin;
+import dev.hytalemod.x17.util.BlockAccess;
 import org.joml.Vector3d;
 
 import java.lang.reflect.Method;
@@ -20,7 +22,7 @@ import java.util.Locale;
 import java.util.logging.Level;
 
 /**
- * X17ItemStealSystem - v0.3.8
+ * X17ItemStealSystem - v0.3.9
  *
  * Silently removes one priority item from a nearby chest. There are no drops
  * and
@@ -67,14 +69,10 @@ public class X17ItemStealSystem {
 
         for (int x = cx - SCAN_RADIUS; x <= cx + SCAN_RADIUS; x++) {
             for (int z = cz - SCAN_RADIUS; z <= cz + SCAN_RADIUS; z++) {
-                WorldChunk chunk = getChunk(world, x, z);
-                if (chunk == null) {
-                    continue;
-                }
 
                 for (int y = cy - SCAN_Y_DOWN; y <= cy + SCAN_Y_UP; y++) {
                     try {
-                        BlockType blockType = chunk.getBlockType(x, y, z);
+                        BlockType blockType = BlockAccess.getBlockType(world, x, y, z);
                         if (blockType == null || !normalizeBlockId(blockType.getId()).contains("chest")) {
                             continue;
                         }
@@ -86,7 +84,7 @@ public class X17ItemStealSystem {
                             continue;
                         }
 
-                        ContainerTarget target = getContainer(chunk, x, y, z);
+                        ContainerTarget target = getContainer(world, x, y, z);
                         if (target == null || target.container.getCapacity() <= 0) {
                             continue;
                         }
@@ -110,7 +108,7 @@ public class X17ItemStealSystem {
                         }
 
                         target.containerBlock.setItemContainer(target.container);
-                        if (!commitContainer(chunk, target, x, y, z)) {
+                        if (!commitContainer(world, target)) {
                             continue;
                         }
 
@@ -129,20 +127,18 @@ public class X17ItemStealSystem {
         return false;
     }
 
-    private ContainerTarget getContainer(WorldChunk chunk, int x, int y, int z) {
-        Ref<ChunkStore> ref = chunk.getBlockComponentEntity(x, y, z);
-        Holder<ChunkStore> holder = chunk.getBlockComponentHolder(x, y, z);
-        if (holder == null) {
+    private ContainerTarget getContainer(World world, int x, int y, int z) {
+        Ref<ChunkStore> ref = BlockModule.getBlockEntity(world, x, y, z);
+        if (ref == null || !ref.isValid()) {
             return null;
         }
-
-        ItemContainerBlock containerBlock = holder.getComponent(ItemContainerBlock.getComponentType());
+        ItemContainerBlock containerBlock = world.getChunkStore().getStore()
+                .getComponent(ref, ItemContainerBlock.getComponentType());
         if (containerBlock == null) {
             return null;
         }
-
         SimpleItemContainer container = containerBlock.getItemContainer();
-        return container != null ? new ContainerTarget(ref, holder, containerBlock, container) : null;
+        return container != null ? new ContainerTarget(ref, containerBlock, container) : null;
     }
 
     private ItemStack removeStackSilently(SimpleItemContainer container, short slot)
@@ -154,35 +150,23 @@ public class X17ItemStealSystem {
         return (ItemStack) removeSlotMethod.invoke(container, slot);
     }
 
-    private boolean commitContainer(WorldChunk chunk, ContainerTarget target, int x, int y, int z) {
-        if (target.ref != null) {
-            chunk.getWorld().getChunkStore().getStore().replaceComponent(
-                    target.ref, ItemContainerBlock.getComponentType(), target.containerBlock);
-            return true;
-        }
-
-        target.holder.replaceComponent(ItemContainerBlock.getComponentType(), target.containerBlock);
-        BlockType blockType = chunk.getBlockType(x, y, z);
-        chunk.setState(x, y, z, blockType, chunk.getRotationIndex(x, y, z), target.holder);
-        chunk.markNeedsSaving();
+    private boolean commitContainer(World world, ContainerTarget target) {
+        world.getChunkStore().getStore().replaceComponent(
+                target.ref, ItemContainerBlock.getComponentType(), target.containerBlock);
         return true;
     }
 
     private static final class ContainerTarget {
         private final Ref<ChunkStore> ref;
-        private final Holder<ChunkStore> holder;
         private final ItemContainerBlock containerBlock;
         private final SimpleItemContainer container;
 
-        private ContainerTarget(Ref<ChunkStore> ref, Holder<ChunkStore> holder, ItemContainerBlock containerBlock,
-                SimpleItemContainer container) {
+        private ContainerTarget(Ref<ChunkStore> ref, ItemContainerBlock containerBlock, SimpleItemContainer container) {
             this.ref = ref;
-            this.holder = holder;
             this.containerBlock = containerBlock;
             this.container = container;
         }
     }
-
     private short findTargetSlot(SimpleItemContainer container) {
         short capacity = container.getCapacity();
 
@@ -211,15 +195,6 @@ public class X17ItemStealSystem {
         }
         String itemId = stack.getItemId();
         return itemId != null && itemId.toLowerCase(Locale.ROOT).contains(priority);
-    }
-
-    private WorldChunk getChunk(World world, int x, int z) {
-        try {
-            return world.getChunkStore().getChunkComponent(
-                    ChunkUtil.indexChunkFromBlock(x, z), WorldChunk.getComponentType());
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private String normalizeBlockId(String raw) {

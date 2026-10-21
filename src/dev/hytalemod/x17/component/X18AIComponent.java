@@ -8,7 +8,7 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * X18AIComponent - v0.3.8
+ * X18AIComponent - v0.3.9
  *
  * Runtime state for the X_18 cave stalker. All timing constants live here so
  * X18AISystem is free of magic numbers.

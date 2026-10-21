@@ -1,18 +1,17 @@
 package dev.hytalemod.x17.system;
 
 import org.joml.Vector3d;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import dev.hytalemod.x17.X17Plugin;
+import dev.hytalemod.x17.util.BlockAccess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
- * X17TorchExtinguishSystem - v0.3.8
+ * X17TorchExtinguishSystem - v0.3.9
  * 
  * Extinguishes all torch-type blocks within a configurable AOE radius around a
  * given world position. Triggered by X17AISystem whenever X17 enters its first
@@ -152,21 +151,10 @@ public class X17TorchExtinguishSystem {
                 int bx = cx + x;
                 int bz = cz + z;
 
-                                WorldChunk chunk;
-                try {
-                    chunk = world.getChunkStore().getChunkComponent(
-                            ChunkUtil.indexChunkFromBlock(bx, bz), WorldChunk.getComponentType());
-                } catch (Exception e) {
-                    continue;
-                }
-                if (chunk == null) {
-                    continue;
-                }
-
                 for (int y = -SCAN_Y_DOWN; y <= SCAN_Y_UP; y++) {
                     int by = cy + y;
                     try {
-                        BlockType bt = chunk.getBlockType(bx, by, bz);
+                        BlockType bt = BlockAccess.getBlockType(world, bx, by, bz);
                         if (bt == null) {
                             continue;
                         }
@@ -177,9 +165,9 @@ public class X17TorchExtinguishSystem {
                         }
 
                         // 6-arg overload on BlockAccessor - actually writes state.
-                        chunk.setBlockInteractionState(bx, by, bz, bt, STATE_OFF, false);
-                        chunk.markNeedsSaving();
-                        extinguished++;
+                        if (BlockAccess.setBlockInteractionState(world, bx, by, bz, bt, STATE_OFF, false)) {
+                            extinguished++;
+                        }
                     } catch (Exception e) {
                         log(Level.INFO, "[Torch] setBlockInteractionState failed at ("
                                 + bx + "," + by + "," + bz + "): " + e.getMessage());

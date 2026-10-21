@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
+import dev.hytalemod.x17.util.BlockAccess;
 import dev.hytalemod.x17.scheduler.X17NightScheduler;
 
 import java.util.Arrays;
@@ -23,7 +24,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * X17SoundSystem - v0.3.8
+ * X17SoundSystem - v0.3.9
  *
  * Sound pacing is synchronized with scheduler decisions:
  * spawn nights get deceptive local sounds, ghost nights get rarer remote
@@ -286,7 +287,7 @@ public class X17SoundSystem extends TickingSystem<EntityStore> {
         for (int x = -6; x <= 6; x++) {
             for (int y = -2; y <= 4; y++) {
                 for (int z = -6; z <= 6; z++) {
-                    BlockType blockType = world.getBlockType(px + x, py + y, pz + z);
+                    BlockType blockType = BlockAccess.getBlockType(world, px + x, py + y, pz + z);
                     if (blockType == null) {
                         continue;
                     }

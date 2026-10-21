@@ -19,6 +19,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.hytalemod.x17.X17Plugin;
+import dev.hytalemod.x17.util.BlockAccess;
 import dev.hytalemod.x17.component.X18AIComponent;
 import dev.hytalemod.x17.component.X18AIComponent.X18State;
 import dev.hytalemod.x17.scheduler.X18CaveDayScheduler;
@@ -29,7 +30,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 /*
- * X_18 - Cave Stalker AI - v0.3.8
+ * X_18 - Cave Stalker AI - v0.3.9
  *
  * -- DESIGN REQUIREMENTS ------------------------------------------------------
  *
@@ -1874,7 +1875,7 @@ public class X18AISystem extends EntityTickingSystem<EntityStore> {
 
     private BlockType safeBlock(World world, int x, int y, int z) {
         try {
-            return world.getBlockType(x, y, z);
+            return BlockAccess.getBlockType(world, x, y, z);
         } catch (Exception ignored) {
             return null;
         }
